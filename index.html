@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>碳循环小记</title>
+
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="images/icon-512.png">
+    <meta name="theme-color" content="#c26a2e">
+</head>
+
+<body>
+    <main class="app">
+        <header class="app-header">
+            <div class="header-top">
+                <button id="openIntroButton" class="setting-button secondary-button" type="button">
+                    简介
+                </button>
+
+                <div class="header-title">
+                    <h1>碳循环小记</h1>
+                    <p>记录每天的高碳 / 中碳 / 低碳饮食状态</p>
+                </div>
+
+                <button id="openSettingsButton" class="setting-button" type="button">
+                    设置
+                </button>
+            </div>
+        </header>
+
+        <section class="card">
+            <div class="calendar-header">
+                <button id="prevMonthButton" class="calendar-nav-button" type="button">‹</button>
+                <h2 id="calendarTitle">日历</h2>
+                <button id="nextMonthButton" class="calendar-nav-button" type="button">›</button>
+            </div>
+
+            <div class="calendar-weekdays">
+                <span>日</span>
+                <span>一</span>
+                <span>二</span>
+                <span>三</span>
+                <span>四</span>
+                <span>五</span>
+                <span>六</span>
+            </div>
+
+            <div id="calendarGrid" class="calendar-grid"></div>
+
+            <p class="calendar-help">
+                红色 = 高碳日，橙色 = 中碳日，蓝绿色 = 低碳日
+            </p>
+        </section>
+
+        <section class="card">
+            <h2>当前日期</h2>
+            <p id="selectedDateText" class="selected-date-text">-</p>
+        </section>
+
+        <section class="card">
+            <h2>今日设置</h2>
+
+            <div class="form-group">
+                <label for="dietMode">饮食模式</label>
+                <select id="dietMode">
+                    <option value="bulk">增肌版</option>
+                    <option value="cut">减脂版</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="dayType">今日类型</label>
+                <select id="dayType">
+                    <option value="high">高碳日</option>
+                    <option value="medium" selected>中碳日</option>
+                    <option value="low">低碳日</option>
+                </select>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>今日目标</h2>
+
+            <div class="target-grid">
+                <div>
+                    <span class="label">蛋白质</span>
+                    <strong id="targetProtein">0g</strong>
+                </div>
+
+                <div>
+                    <span class="label">碳水</span>
+                    <strong id="targetCarbs">0g</strong>
+                </div>
+
+                <div>
+                    <span class="label">脂肪</span>
+                    <strong id="targetFat">0g</strong>
+                </div>
+
+                <div>
+                    <span class="label">热量</span>
+                    <strong id="targetCalories">0 kcal</strong>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>今日实际摄入</h2>
+
+            <div class="form-group">
+                <label for="mealType">餐食种类</label>
+                <select id="mealType">
+                    <option value="breakfast">早餐</option>
+                    <option value="lunch">午餐</option>
+                    <option value="dinner">晚餐</option>
+                    <option value="snack">间餐</option>
+                    <option value="preWorkout">训练前</option>
+                    <option value="postWorkout">训练后</option>
+                    <option value="beforeSleep">睡前餐</option>
+                    <option value="other">其他</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="mealName">餐食名称 / 备注</label>
+                <input id="mealName" type="text" placeholder="例如：蛋白粉 + 香蕉">
+            </div>
+
+            <div class="form-group">
+                <label for="actualProtein">蛋白质 g</label>
+                <input id="actualProtein" type="number" inputmode="decimal" placeholder="例如 35">
+            </div>
+
+            <div class="form-group">
+                <label for="actualCarbs">碳水 g</label>
+                <input id="actualCarbs" type="number" inputmode="decimal" placeholder="例如 60">
+            </div>
+
+            <div class="form-group">
+                <label for="actualFat">脂肪 g</label>
+                <input id="actualFat" type="number" inputmode="decimal" placeholder="例如 5">
+            </div>
+
+            <section class="summary-box">
+                <p>当前日期合计：<strong id="actualTotalText">P 0g / C 0g / F 0g</strong></p>
+                <p>当前日期热量：<strong id="actualCaloriesText">0 kcal</strong></p>
+            </section>
+
+            <button id="saveButton" class="primary-button" type="button">
+                追加到当前日期
+            </button>
+        </section>
+
+        <section class="card">
+            <h2>今日差距</h2>
+
+            <div class="result-list">
+                <p id="proteinDiff">蛋白质：-</p>
+                <p id="carbsDiff">碳水：-</p>
+                <p id="fatDiff">脂肪：-</p>
+                <p id="caloriesDiff">热量：-</p>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>当前日期记录</h2>
+
+            <div id="recordList" class="record-list">
+                <p class="empty-text">当前日期还没有记录</p>
+            </div>
+        </section>
+    </main>
+
+    <div id="introModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>关于碳循环小记</h2>
+                <button id="closeIntroButton" class="close-button" type="button">×</button>
+            </div>
+
+            <section class="intro-section">
+                <h3>设计目的</h3>
+                <p>
+                    「碳循环小记」是一款用于记录高碳日、中碳日、低碳日饮食摄入的小工具。
+                    它适合正在增肌、减脂、备赛，或者想控制体脂变化的人使用。
+                </p>
+                <p>
+                    App 的核心目标不是替代专业营养师，而是帮助用户把每天的蛋白质、碳水、脂肪和总热量记录清楚，
+                    通过日历观察自己的饮食节奏。
+                </p>
+            </section>
+
+            <section class="intro-section">
+                <h3>基础代谢 BMR</h3>
+                <p>
+                    BMR 表示人在静息状态下维持生命活动所需要的最低热量。
+                    本 App 使用常见的 Harris-Benedict 风格估算公式。
+                </p>
+
+                <div class="formula-box">
+                    <p>男性：66 + 13.7 × 体重kg + 5 × 身高cm - 6.8 × 年龄</p>
+                    <p>女性：655 + 9.6 × 体重kg + 1.8 × 身高cm - 4.7 × 年龄</p>
+                </div>
+            </section>
+
+            <section class="intro-section">
+                <h3>日总消耗 TDEE</h3>
+                <p>
+                    TDEE 表示一天总消耗热量。它会在 BMR 的基础上乘以活动系数。
+                </p>
+
+                <div class="formula-box">
+                    <p>TDEE = BMR × 活动系数</p>
+                </div>
+            </section>
+
+            <section class="intro-section">
+                <h3>PFC 热量换算</h3>
+                <p>
+                    PFC 是蛋白质、脂肪、碳水的简称。App 会根据下面的换算自动计算总热量。
+                </p>
+
+                <div class="formula-box">
+                    <p>蛋白质：1g = 4 kcal</p>
+                    <p>碳水：1g = 4 kcal</p>
+                    <p>脂肪：1g = 9 kcal</p>
+                </div>
+            </section>
+
+            <section class="intro-section">
+                <h3>碳循环逻辑</h3>
+                <p>
+                    碳循环的核心思路是：训练强度高的日子提高碳水，轻训练或休息日降低碳水。
+                    这样可以在保证训练表现的同时，更好地控制体脂变化。
+                </p>
+
+                <div class="formula-box">
+                    <p>高碳日：适合腿、背、大重量训练日</p>
+                    <p>中碳日：适合普通力量训练日</p>
+                    <p>低碳日：适合休息日、轻有氧日</p>
+                </div>
+            </section>
+
+            <section class="intro-section">
+                <h3>注意事项</h3>
+                <p>
+                    所有计算结果都是估算值。实际饮食应结合体重变化、训练表现、睡眠状态和身体反馈调整。
+                    如果连续一周体重变化过快或过慢，可以适当调整每日热量。
+                </p>
+            </section>
+        </div>
+    </div>
+
+    <div id="settingsModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>个人数据设置</h2>
+                <button id="closeSettingsButton" class="close-button" type="button">×</button>
+            </div>
+
+            <div class="form-group">
+                <label for="userGender">性别</label>
+                <select id="userGender">
+                    <option value="male">男性</option>
+                    <option value="female">女性</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="userAge">年龄</label>
+                <input id="userAge" type="number" inputmode="numeric" placeholder="例如 26">
+            </div>
+
+            <div class="form-group">
+                <label for="userHeight">身高 cm</label>
+                <input id="userHeight" type="number" inputmode="decimal" placeholder="例如 176">
+            </div>
+
+            <div class="form-group">
+                <label for="userWeight">体重 kg</label>
+                <input id="userWeight" type="number" inputmode="decimal" placeholder="例如 77">
+            </div>
+
+            <div class="form-group">
+                <label for="userBodyFat">体脂率 %</label>
+                <input id="userBodyFat" type="number" inputmode="decimal" placeholder="例如 20">
+            </div>
+
+            <div class="form-group">
+                <label for="activityLevel">活动系数 / 运动程度</label>
+
+                <select id="activityLevel">
+                    <option value="1.0">1.0｜几乎不活动：睡觉、看电视、打游戏</option>
+                    <option value="1.2">1.2｜正常学习工作，不运动</option>
+                    <option value="1.4">1.4｜学习工作外，适量运动，例如跑步、散步</option>
+                    <option value="1.6" selected>1.6｜非体力职业，但每天规律举铁训练</option>
+                    <option value="1.8">1.8｜体力活职业 + 规律训练，或一天两练</option>
+                    <option value="2.0">2.0｜超繁重体力活职业 + 高强度训练</option>
+                </select>
+
+                <p class="help-text">
+                    用于估算每日总消耗 TDEE。训练越频繁、工作越辛苦，系数越高。
+                </p>
+            </div>
+
+            <section class="summary-box">
+                <p>BMR 基础代谢：<strong id="bmrResult">-</strong></p>
+                <p>TDEE 日总消耗：<strong id="tdeeResult">-</strong></p>
+            </section>
+
+            <button id="saveSettingsButton" class="primary-button" type="button">
+                保存设置
+            </button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

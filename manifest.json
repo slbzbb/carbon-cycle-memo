@@ -1,0 +1,16 @@
+{
+    "name": "碳循环小记",
+    "short_name": "碳循环",
+    "description": "记录高碳日、中碳日、低碳日的饮食摄入。",
+    "start_url": "./index.html",
+    "display": "standalone",
+    "background_color": "#fff7ed",
+    "theme_color": "#c26a2e",
+    "icons": [
+        {
+            "src": "images/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}
