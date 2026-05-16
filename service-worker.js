@@ -1,4 +1,4 @@
-const CACHE_NAME = "carbon-cycle-memo-v1";
+const CACHE_NAME = "carbon-cycle-memo-v5";
 
 const FILES_TO_CACHE = [
     "./",

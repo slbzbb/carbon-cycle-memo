@@ -553,3 +553,193 @@ body {
     background: var(--color-danger);
     border-color: var(--color-danger);
 }
+
+
+/* ==============================
+   v1.3.1 今日总览卡片
+   ============================== */
+
+.overview-card {
+    background:
+        linear-gradient(135deg, rgba(255, 241, 223, 0.96), rgba(255, 252, 247, 0.96));
+}
+
+.overview-main {
+    margin-bottom: 16px;
+    padding: 14px;
+    background: #fffaf3;
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+}
+
+.overview-main p {
+    margin: 0 0 8px;
+    color: var(--color-muted);
+    font-size: 14px;
+}
+
+.overview-main strong {
+    display: block;
+    margin-bottom: 6px;
+    color: var(--color-primary-dark);
+    font-size: 24px;
+}
+
+.overview-main span {
+    color: var(--color-muted);
+    font-size: 14px;
+}
+
+.progress-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.progress-item {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.progress-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: var(--color-text);
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.progress-header span:last-child {
+    color: var(--color-muted);
+    font-weight: 600;
+}
+
+.progress-track {
+    width: 100%;
+    height: 10px;
+    overflow: hidden;
+    background: #f4dfca;
+    border-radius: 999px;
+}
+
+.progress-bar {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(90deg, var(--color-primary), var(--color-medium));
+    border-radius: 999px;
+    transition: width 0.25s ease;
+}
+
+.progress-bar.is-over {
+    background: linear-gradient(90deg, var(--color-high), var(--color-danger));
+}
+/* ==============================
+   v1.4 双目标模式设置
+   ============================== */
+
+.mode-panel,
+.macro-panel {
+    margin-top: 8px;
+}
+
+#macroPercentHelp.is-warning {
+    color: var(--color-danger);
+    font-weight: 700;
+}
+
+#customTargetPanel {
+    padding: 14px;
+    background: #fffaf3;
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+}
+
+#classicTargetPanel {
+    padding: 0;
+}
+
+
+/* ==============================
+   v1.5 分页面与底部导航
+   ============================== */
+
+.app {
+    padding-bottom: 104px;
+}
+
+.page {
+    display: none;
+}
+
+.page.active-page {
+    display: block;
+}
+
+.bottom-nav {
+    position: fixed;
+    left: 50%;
+    bottom: 14px;
+    z-index: 900;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    width: calc(100% - 28px);
+    max-width: 520px;
+    padding: 8px;
+    background: rgba(255, 252, 247, 0.94);
+    border: 1px solid rgba(239, 216, 197, 0.95);
+    border-radius: 24px;
+    box-shadow: 0 12px 28px rgba(126, 80, 43, 0.16);
+    backdrop-filter: blur(12px);
+    transform: translateX(-50%);
+}
+
+.bottom-nav-button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-height: 54px;
+    color: var(--color-muted);
+    background: transparent;
+    border: none;
+    border-radius: 18px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.bottom-nav-button .nav-icon {
+    font-size: 18px;
+    line-height: 1;
+}
+
+.bottom-nav-button.active-nav {
+    color: var(--color-primary-dark);
+    background: var(--color-card-soft);
+    box-shadow: inset 0 0 0 1px rgba(239, 216, 197, 0.8);
+}
+
+.settings-action-card {
+    margin-top: 16px;
+}
+
+.settings-action-text {
+    margin: 0 0 14px;
+    color: var(--color-muted);
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.settings-action-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+
+.settings-action-grid .setting-button {
+    width: 100%;
+}
