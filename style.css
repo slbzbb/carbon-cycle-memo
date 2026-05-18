@@ -873,3 +873,47 @@ body {
 .weight-stats-grid strong[id="firstWeekDifferenceText"] {
     font-weight: 800;
 }
+
+/* ==============================
+   v1.7 数据备份与恢复
+   ============================== */
+
+.backup-card {
+    margin-top: 16px;
+}
+
+.backup-button-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.backup-button-grid .setting-button,
+.backup-button-grid .primary-button {
+    width: 100%;
+}
+
+.backup-textarea {
+    width: 100%;
+    min-height: 220px;
+    padding: 12px 14px;
+    color: var(--color-text);
+    font-size: 13px;
+    line-height: 1.6;
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+    background: #fffdf9;
+    resize: vertical;
+}
+
+.backup-textarea:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(194, 106, 46, 0.12);
+}
+
+#copyBackupButton {
+    width: 100%;
+    margin-bottom: 10px;
+}

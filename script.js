@@ -161,6 +161,10 @@ const bottomNavButtons = document.querySelectorAll(".bottom-nav-button");
 const openIntroButtonInPage = document.getElementById("openIntroButtonInPage");
 const openSettingsButtonInPage = document.getElementById("openSettingsButtonInPage");
 
+const exportDataButton = document.getElementById("exportDataButton");
+const importDataButton = document.getElementById("importDataButton");
+const copyBackupButton = document.getElementById("copyBackupButton");
+const backupDataText = document.getElementById("backupDataText");
 
 /**
  * 表示ページを切り替える
@@ -1097,6 +1101,153 @@ function updateWeightDisplay() {
 }
 
 /**
+ * v1.7 全データをエクスポートする
+ *
+ * 导出内容：
+ * - 饮食记录
+ * - 用户设置
+ * - 体重记录
+ */
+function exportBackupData() {
+    const backupData = {
+        appName: "碳循环小记",
+        version: "1.7",
+        exportedAt: new Date().toISOString(),
+        data: {
+            records: loadRecords(),
+            settings: loadSettings(),
+            weightRecords: loadWeightRecords(),
+        },
+    };
+
+    const backupText = JSON.stringify(backupData, null, 2);
+
+    backupDataText.value = backupText;
+
+    alert("备份数据已生成，请复制保存。");
+}
+
+/**
+ * v1.7 备份文本をクリップボードへコピーする
+ */
+function copyBackupData() {
+    const text = backupDataText.value.trim();
+
+    if (!text) {
+        alert("目前没有可复制的备份文本。请先点击「导出备份」。");
+        return;
+    }
+
+    navigator.clipboard.writeText(text)
+        .then(() => {
+            alert("备份文本已复制。");
+        })
+        .catch(() => {
+            backupDataText.focus();
+            backupDataText.select();
+
+            alert("自动复制失败，请手动复制备份文本。");
+        });
+}
+
+/**
+ * v1.7 バックアップデータをインポートする
+ *
+ * 导入会覆盖当前 localStorage 中的 App 数据
+ */
+function importBackupData() {
+    const backupText = backupDataText.value.trim();
+
+    if (!backupText) {
+        alert("请先粘贴备份文本。");
+        return;
+    }
+
+    let parsedData = null;
+
+    try {
+        parsedData = JSON.parse(backupText);
+    } catch (error) {
+        console.error("备份数据解析失败", error);
+        alert("备份文本格式不正确，请确认复制完整。");
+        return;
+    }
+
+    if (!validateBackupData(parsedData)) {
+        alert("备份数据内容不完整，无法导入。");
+        return;
+    }
+
+    const confirmed = confirm(
+        "导入后会覆盖当前浏览器中的饮食记录、设置和体重记录。确定要导入吗？"
+    );
+
+    if (!confirmed) {
+        return;
+    }
+
+    localStorage.setItem(
+        STORAGE_KEYS.records,
+        JSON.stringify(parsedData.data.records || [])
+    );
+
+    localStorage.setItem(
+        STORAGE_KEYS.settings,
+        JSON.stringify({
+            ...DEFAULT_SETTINGS,
+            ...(parsedData.data.settings || {}),
+        })
+    );
+
+    localStorage.setItem(
+        STORAGE_KEYS.weightRecords,
+        JSON.stringify(parsedData.data.weightRecords || [])
+    );
+
+    fillTargetSettingsForm();
+    renderCalendar();
+    renderSelectedDateRecord();
+    updateTargetDisplay();
+    updateWeightDisplay();
+
+    alert("数据导入完成。");
+}
+
+/**
+ * v1.7 バックアップデータの形式を検証する
+ *
+ * @param {Object} backupData - 解析后的备份数据
+ * @returns {boolean}
+ */
+function validateBackupData(backupData) {
+    if (!backupData || typeof backupData !== "object") {
+        return false;
+    }
+
+    if (!backupData.data || typeof backupData.data !== "object") {
+        return false;
+    }
+
+    const records = backupData.data.records;
+    const settings = backupData.data.settings;
+    const weightRecords = backupData.data.weightRecords;
+
+    if (!Array.isArray(records)) {
+        return false;
+    }
+
+    if (!settings || typeof settings !== "object") {
+        return false;
+    }
+
+    if (!Array.isArray(weightRecords)) {
+        return false;
+    }
+
+    return true;
+}
+
+/**
  * 指定日の記録を取得する
  *
  * @param {string} dateText - yyyy-mm-dd
@@ -1870,17 +2021,36 @@ function bindMealInputEvents() {
 }
 
 saveButton.addEventListener("click", saveSelectedDateRecord);
-saveWeightButton.addEventListener("click", saveSelectedDateWeight);
+
+if (saveWeightButton) {
+    saveWeightButton.addEventListener("click", saveSelectedDateWeight);
+}
+
+if (exportDataButton) {
+    exportDataButton.addEventListener("click", exportBackupData);
+}
+
+if (importDataButton) {
+    importDataButton.addEventListener("click", importBackupData);
+}
+
+if (copyBackupButton) {
+    copyBackupButton.addEventListener("click", copyBackupData);
+}
 
 prevMonthButton.addEventListener("click", moveToPrevMonth);
 nextMonthButton.addEventListener("click", moveToNextMonth);
-
 openIntroButton.addEventListener("click", openIntroModal);
 closeIntroButton.addEventListener("click", closeIntroModal);
 
 openSettingsButton.addEventListener("click", openSettingsModal);
-openIntroButtonInPage.addEventListener("click", openIntroModal);
-openSettingsButtonInPage.addEventListener("click", openSettingsModal);
+if (openIntroButtonInPage) {
+    openIntroButtonInPage.addEventListener("click", openIntroModal);
+}
+
+if (openSettingsButtonInPage) {
+    openSettingsButtonInPage.addEventListener("click", openSettingsModal);
+}
 closeSettingsButton.addEventListener("click", closeSettingsModal);
 saveSettingsButton.addEventListener("click", saveUserSettings);
 
