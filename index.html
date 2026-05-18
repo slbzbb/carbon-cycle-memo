@@ -3,52 +3,69 @@
 <html lang="zh-CN">
 
 <head>
+    <!-- ==============================
+         基础页面设置
+         ============================== -->
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+
     <title>碳循环小记</title>
+
+    <!-- ==============================
+         样式与 PWA 设置
+         ============================== -->
     <link href="style.css" rel="stylesheet" />
     <link href="manifest.json" rel="manifest" />
     <link href="images/icon-512.png" rel="apple-touch-icon" />
+
     <meta content="#c26a2e" name="theme-color" />
 </head>
 
 <body>
     <main class="app">
 
-
-
-
-
-
-
-
-
+        <!-- ==============================
+             App 顶部标题区域
+             ============================== -->
         <header class="app-header">
             <div class="header-top">
                 <button class="setting-button secondary-button" id="openIntroButton" type="button">
                     简介
                 </button>
+
                 <div class="header-title">
                     <h1>碳循环小记</h1>
                     <p>记录每天的高碳 / 中碳 / 低碳饮食状态</p>
                 </div>
+
                 <button class="setting-button" id="openSettingsButton" type="button">
                     设置
                 </button>
             </div>
         </header>
+
+        <!-- ==============================
+             页面 1：首页
+             内容：当前日期 / 今日总览 / 今日目标 / 今日差距
+             ============================== -->
         <section class="page active-page" id="homePage">
+
+            <!-- 当前日期 -->
             <section class="card">
                 <h2>当前日期</h2>
                 <p class="selected-date-text" id="selectedDateText">-</p>
             </section>
+
+            <!-- 今日总览 -->
             <section class="card overview-card">
                 <h2>今日总览</h2>
+
                 <div class="overview-main">
                     <p id="overviewDateType">-</p>
                     <strong id="overviewCalories">0 / 0 kcal</strong>
                     <span id="overviewCalorieDiff">热量：-</span>
                 </div>
+
                 <div class="progress-list">
                     <div class="progress-item">
                         <div class="progress-header">
@@ -59,6 +76,7 @@
                             <div class="progress-bar" id="proteinProgressBar"></div>
                         </div>
                     </div>
+
                     <div class="progress-item">
                         <div class="progress-header">
                             <span>碳水</span>
@@ -68,6 +86,7 @@
                             <div class="progress-bar" id="carbsProgressBar"></div>
                         </div>
                     </div>
+
                     <div class="progress-item">
                         <div class="progress-header">
                             <span>脂肪</span>
@@ -77,6 +96,7 @@
                             <div class="progress-bar" id="fatProgressBar"></div>
                         </div>
                     </div>
+
                     <div class="progress-item">
                         <div class="progress-header">
                             <span>热量</span>
@@ -88,29 +108,38 @@
                     </div>
                 </div>
             </section>
+
+            <!-- 今日目标 -->
             <section class="card">
                 <h2>今日目标</h2>
+
                 <div class="target-grid">
                     <div>
                         <span class="label">蛋白质</span>
                         <strong id="targetProtein">0g</strong>
                     </div>
+
                     <div>
                         <span class="label">碳水</span>
                         <strong id="targetCarbs">0g</strong>
                     </div>
+
                     <div>
                         <span class="label">脂肪</span>
                         <strong id="targetFat">0g</strong>
                     </div>
+
                     <div>
                         <span class="label">热量</span>
                         <strong id="targetCalories">0 kcal</strong>
                     </div>
                 </div>
             </section>
+
+            <!-- 今日差距 -->
             <section class="card">
                 <h2>今日差距</h2>
+
                 <div class="result-list">
                     <p id="proteinDiff">蛋白质：-</p>
                     <p id="carbsDiff">碳水：-</p>
@@ -119,9 +148,17 @@
                 </div>
             </section>
         </section>
+
+        <!-- ==============================
+             页面 2：记录页
+             内容：实际摄入输入 / 当前日期记录
+             ============================== -->
         <section class="page" id="logPage">
+
+            <!-- 今日实际摄入 -->
             <section class="card">
                 <h2>今日实际摄入</h2>
+
                 <div class="form-group">
                     <label for="mealType">餐食种类</label>
                     <select id="mealType">
@@ -135,44 +172,61 @@
                         <option value="other">其他</option>
                     </select>
                 </div>
+
                 <div class="form-group">
                     <label for="mealName">餐食名称 / 备注</label>
                     <input id="mealName" placeholder="例如：蛋白粉 + 香蕉" type="text" />
                 </div>
+
                 <div class="form-group">
                     <label for="actualProtein">蛋白质 g</label>
                     <input id="actualProtein" inputmode="decimal" placeholder="例如 35" type="number" />
                 </div>
+
                 <div class="form-group">
                     <label for="actualCarbs">碳水 g</label>
                     <input id="actualCarbs" inputmode="decimal" placeholder="例如 60" type="number" />
                 </div>
+
                 <div class="form-group">
                     <label for="actualFat">脂肪 g</label>
                     <input id="actualFat" inputmode="decimal" placeholder="例如 5" type="number" />
                 </div>
+
                 <section class="summary-box">
                     <p>当前日期合计：<strong id="actualTotalText">P 0g / C 0g / F 0g</strong></p>
                     <p>当前日期热量：<strong id="actualCaloriesText">0 kcal</strong></p>
                 </section>
+
                 <button class="primary-button" id="saveButton" type="button">
                     追加到当前日期
                 </button>
             </section>
+
+            <!-- 当前日期记录 -->
             <section class="card">
                 <h2>当前日期记录</h2>
+
                 <div class="record-list" id="recordList">
                     <p class="empty-text">当前日期还没有记录</p>
                 </div>
             </section>
         </section>
+
+        <!-- ==============================
+             页面 3：日历页
+             内容：日历 / 体重记录 / 周平均趋势
+             ============================== -->
         <section class="page" id="calendarPage">
+
+            <!-- 日历 -->
             <section class="card">
                 <div class="calendar-header">
                     <button class="calendar-nav-button" id="prevMonthButton" type="button">‹</button>
                     <h2 id="calendarTitle">日历</h2>
                     <button class="calendar-nav-button" id="nextMonthButton" type="button">›</button>
                 </div>
+
                 <div class="calendar-weekdays">
                     <span>日</span>
                     <span>一</span>
@@ -182,25 +236,85 @@
                     <span>五</span>
                     <span>六</span>
                 </div>
+
                 <div class="calendar-grid" id="calendarGrid"></div>
+
                 <p class="calendar-help">
                     红色 = 高碳日，橙色 = 中碳日，蓝绿色 = 低碳日
                 </p>
             </section>
+
+            <!-- v1.6 体重记录 -->
+            <section class="card">
+                <h2>体重记录</h2>
+
+                <p class="selected-date-text" id="weightDateText">-</p>
+
+                <div class="form-group">
+                    <label for="dailyWeightInput">当前日期体重 kg</label>
+                    <input id="dailyWeightInput" type="number" inputmode="decimal" placeholder="例如 74.2" />
+                </div>
+
+                <button id="saveWeightButton" class="primary-button" type="button">
+                    保存当前日期体重
+                </button>
+
+                <p class="help-text">
+                    建议每天早起上厕所后、空腹、同一条件下记录体重。单日体重容易受水分、盐分、碳水和训练影响，周平均更有参考价值。
+                </p>
+            </section>
+
+            <!-- v1.6 周平均趋势 -->
+            <section class="card">
+                <h2>周平均趋势</h2>
+
+                <div class="weight-stats-grid">
+                    <div>
+                        <span class="label">本周平均</span>
+                        <strong id="currentWeekAverageText">-</strong>
+                    </div>
+
+                    <div>
+                        <span class="label">上周平均</span>
+                        <strong id="previousWeekAverageText">-</strong>
+                    </div>
+
+                    <div>
+                        <span class="label">较上周</span>
+                        <strong id="weekDifferenceText">-</strong>
+                    </div>
+
+                    <div>
+                        <span class="label">较起始周</span>
+                        <strong id="firstWeekDifferenceText">-</strong>
+                    </div>
+                </div>
+            </section>
         </section>
+
+        <!-- ==============================
+             页面 4：设置页
+             内容：目标计算模式 / App 设置入口
+             ============================== -->
         <section class="page" id="settingsPage">
+
+            <!-- 今日设置 -->
             <section class="card">
                 <h2>今日设置</h2>
+
                 <div class="form-group">
                     <label for="targetCalculationMode">目标计算模式</label>
                     <select id="targetCalculationMode">
                         <option value="classic">经典碳循环模式</option>
                         <option value="custom">自定义热量模式</option>
                     </select>
+
                     <p class="help-text">
                         经典模式保留原来的增肌版 / 减脂版计算；自定义模式以 TDEE 为基准，自由设置热量偏移和 PFC 分配。
                     </p>
                 </div>
+
+                <!-- 经典碳循环目标模式 -->
                 <div class="mode-panel" id="classicTargetPanel">
                     <div class="form-group">
                         <label for="dietMode">饮食模式</label>
@@ -209,15 +323,18 @@
                             <option value="cut">减脂版</option>
                         </select>
                     </div>
+
                     <div class="form-group">
                         <label for="dayType">今日类型</label>
                         <select id="dayType">
                             <option value="high">高碳日</option>
-                            <option selected="" value="medium">中碳日</option>
+                            <option selected value="medium">中碳日</option>
                             <option value="low">低碳日</option>
                         </select>
                     </div>
                 </div>
+
+                <!-- 自定义热量目标模式 -->
                 <div class="mode-panel hidden" id="customTargetPanel">
                     <div class="form-group">
                         <label for="customDayType">自定义日类型</label>
@@ -227,11 +344,12 @@
                             <option value="custom">自定义日</option>
                         </select>
                     </div>
+
                     <div class="form-group">
                         <label for="calorieOffset">今日热量调整</label>
                         <select id="calorieOffset">
                             <option value="-600">TDEE - 600 kcal</option>
-                            <option selected="" value="-500">TDEE - 500 kcal</option>
+                            <option selected value="-500">TDEE - 500 kcal</option>
                             <option value="-400">TDEE - 400 kcal</option>
                             <option value="-300">TDEE - 300 kcal</option>
                             <option value="0">TDEE ± 0 kcal</option>
@@ -240,82 +358,114 @@
                             <option value="manual">手动输入</option>
                         </select>
                     </div>
+
                     <div class="form-group hidden" id="manualOffsetGroup">
                         <label for="manualCalorieOffset">手动热量调整 kcal</label>
                         <input id="manualCalorieOffset" inputmode="numeric" placeholder="例如 -450" type="number" />
                     </div>
+
                     <div class="form-group">
                         <label for="macroMethod">PFC 分配方式</label>
                         <select id="macroMethod">
-                            <option selected="" value="fixed">固定蛋白质 / 脂肪，碳水自动计算</option>
+                            <option selected value="fixed">固定蛋白质 / 脂肪，碳水自动计算</option>
                             <option value="percent">百分比分配</option>
                         </select>
                     </div>
+
+                    <!-- 固定蛋白质 / 脂肪模式 -->
                     <div class="macro-panel" id="fixedMacroPanel">
                         <div class="form-group">
                             <label for="fixedProtein">蛋白质目标 g</label>
                             <input id="fixedProtein" inputmode="decimal" placeholder="例如 170" type="number" />
                         </div>
+
                         <div class="form-group">
                             <label for="fixedFat">脂肪目标 g</label>
                             <input id="fixedFat" inputmode="decimal" placeholder="低碳日如 75，高碳日如 50" type="number" />
                         </div>
                     </div>
+
+                    <!-- 百分比分配模式 -->
                     <div class="macro-panel hidden" id="percentMacroPanel">
                         <div class="form-group">
                             <label for="proteinPercent">蛋白质 %</label>
                             <input id="proteinPercent" inputmode="decimal" placeholder="例如 30" type="number" />
                         </div>
+
                         <div class="form-group">
                             <label for="carbsPercent">碳水 %</label>
                             <input id="carbsPercent" inputmode="decimal" placeholder="例如 45" type="number" />
                         </div>
+
                         <div class="form-group">
                             <label for="fatPercent">脂肪 %</label>
                             <input id="fatPercent" inputmode="decimal" placeholder="例如 25" type="number" />
                         </div>
+
                         <p class="help-text" id="macroPercentHelp">
                             三项合计建议为 100%。
                         </p>
                     </div>
                 </div>
             </section>
+
+            <!-- App 设置入口 -->
             <section class="card settings-action-card">
                 <h2>App 设置</h2>
-                <p class="settings-action-text">这里可以查看 App 说明，或者修改个人数据来重新计算 BMR / TDEE。</p>
+
+                <p class="settings-action-text">
+                    这里可以查看 App 说明，或者修改个人数据来重新计算 BMR / TDEE。
+                </p>
+
                 <div class="settings-action-grid">
-                    <button class="setting-button secondary-button" id="openIntroButtonInPage"
-                        type="button">查看简介</button>
-                    <button class="setting-button" id="openSettingsButtonInPage" type="button">个人数据</button>
+                    <button class="setting-button secondary-button" id="openIntroButtonInPage" type="button">
+                        查看简介
+                    </button>
+
+                    <button class="setting-button" id="openSettingsButtonInPage" type="button">
+                        个人数据
+                    </button>
                 </div>
             </section>
         </section>
     </main>
+
+    <!-- ==============================
+         底部导航栏
+         用于切换：首页 / 记录 / 日历 / 设置
+         ============================== -->
     <nav aria-label="主要导航" class="bottom-nav">
         <button class="bottom-nav-button active-nav" data-page="homePage" type="button">
             <span class="nav-icon">🏠</span>
             <span>首页</span>
         </button>
+
         <button class="bottom-nav-button" data-page="logPage" type="button">
             <span class="nav-icon">🍚</span>
             <span>记录</span>
         </button>
+
         <button class="bottom-nav-button" data-page="calendarPage" type="button">
             <span class="nav-icon">📅</span>
             <span>日历</span>
         </button>
+
         <button class="bottom-nav-button" data-page="settingsPage" type="button">
             <span class="nav-icon">⚙️</span>
             <span>设置</span>
         </button>
     </nav>
 
+    <!-- ==============================
+         简介弹窗
+         ============================== -->
     <div class="modal hidden" id="introModal">
         <div class="modal-content">
             <div class="modal-header">
                 <h2>关于碳循环小记</h2>
                 <button class="close-button" id="closeIntroButton" type="button">×</button>
             </div>
+
             <section class="intro-section">
                 <h3>设计目的</h3>
                 <p>
@@ -327,49 +477,58 @@
                     通过日历观察自己的饮食节奏。
                 </p>
             </section>
+
             <section class="intro-section">
                 <h3>基础代谢 BMR</h3>
                 <p>
                     BMR 表示人在静息状态下维持生命活动所需要的最低热量。
                     本 App 使用常见的 Harris-Benedict 风格估算公式。
                 </p>
+
                 <div class="formula-box">
                     <p>男性：66 + 13.7 × 体重kg + 5 × 身高cm - 6.8 × 年龄</p>
                     <p>女性：655 + 9.6 × 体重kg + 1.8 × 身高cm - 4.7 × 年龄</p>
                 </div>
             </section>
+
             <section class="intro-section">
                 <h3>日总消耗 TDEE</h3>
                 <p>
                     TDEE 表示一天总消耗热量。它会在 BMR 的基础上乘以活动系数。
                 </p>
+
                 <div class="formula-box">
                     <p>TDEE = BMR × 活动系数</p>
                 </div>
             </section>
+
             <section class="intro-section">
                 <h3>PFC 热量换算</h3>
                 <p>
                     PFC 是蛋白质、脂肪、碳水的简称。App 会根据下面的换算自动计算总热量。
                 </p>
+
                 <div class="formula-box">
                     <p>蛋白质：1g = 4 kcal</p>
                     <p>碳水：1g = 4 kcal</p>
                     <p>脂肪：1g = 9 kcal</p>
                 </div>
             </section>
+
             <section class="intro-section">
                 <h3>碳循环逻辑</h3>
                 <p>
                     碳循环的核心思路是：训练强度高的日子提高碳水，轻训练或休息日降低碳水。
                     这样可以在保证训练表现的同时，更好地控制体脂变化。
                 </p>
+
                 <div class="formula-box">
                     <p>高碳日：适合腿、背、大重量训练日</p>
                     <p>中碳日：适合普通力量训练日</p>
                     <p>低碳日：适合休息日、轻有氧日</p>
                 </div>
             </section>
+
             <section class="intro-section">
                 <h3>注意事项</h3>
                 <p>
@@ -379,12 +538,18 @@
             </section>
         </div>
     </div>
+
+    <!-- ==============================
+         个人数据设置弹窗
+         内容：性别 / 年龄 / 身高 / 体重 / 体脂率 / 活动系数
+         ============================== -->
     <div class="modal hidden" id="settingsModal">
         <div class="modal-content">
             <div class="modal-header">
                 <h2>个人数据设置</h2>
                 <button class="close-button" id="closeSettingsButton" type="button">×</button>
             </div>
+
             <div class="form-group">
                 <label for="userGender">性别</label>
                 <select id="userGender">
@@ -392,45 +557,57 @@
                     <option value="female">女性</option>
                 </select>
             </div>
+
             <div class="form-group">
                 <label for="userAge">年龄</label>
                 <input id="userAge" inputmode="numeric" placeholder="例如 26" type="number" />
             </div>
+
             <div class="form-group">
                 <label for="userHeight">身高 cm</label>
                 <input id="userHeight" inputmode="decimal" placeholder="例如 176" type="number" />
             </div>
+
             <div class="form-group">
                 <label for="userWeight">体重 kg</label>
                 <input id="userWeight" inputmode="decimal" placeholder="例如 77" type="number" />
             </div>
+
             <div class="form-group">
                 <label for="userBodyFat">体脂率 %</label>
                 <input id="userBodyFat" inputmode="decimal" placeholder="例如 20" type="number" />
             </div>
+
             <div class="form-group">
                 <label for="activityLevel">活动系数 / 运动程度</label>
                 <select id="activityLevel">
                     <option value="1.0">1.0｜几乎不活动：睡觉、看电视、打游戏</option>
                     <option value="1.2">1.2｜正常学习工作，不运动</option>
                     <option value="1.4">1.4｜学习工作外，适量运动，例如跑步、散步</option>
-                    <option selected="" value="1.6">1.6｜非体力职业，但每天规律举铁训练</option>
+                    <option selected value="1.6">1.6｜非体力职业，但每天规律举铁训练</option>
                     <option value="1.8">1.8｜体力活职业 + 规律训练，或一天两练</option>
                     <option value="2.0">2.0｜超繁重体力活职业 + 高强度训练</option>
                 </select>
+
                 <p class="help-text">
                     用于估算每日总消耗 TDEE。训练越频繁、工作越辛苦，系数越高。
                 </p>
             </div>
+
             <section class="summary-box">
                 <p>BMR 基础代谢：<strong id="bmrResult">-</strong></p>
                 <p>TDEE 日总消耗：<strong id="tdeeResult">-</strong></p>
             </section>
+
             <button class="primary-button" id="saveSettingsButton" type="button">
                 保存设置
             </button>
         </div>
     </div>
+
+    <!-- ==============================
+         JavaScript
+         ============================== -->
     <script src="script.js"></script>
 </body>
 

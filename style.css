@@ -743,3 +743,133 @@ body {
 .settings-action-grid .setting-button {
     width: 100%;
 }
+
+/* ==============================
+   v1.5 分页面强制修复
+   ============================== */
+
+.app {
+    padding-bottom: 110px !important;
+}
+
+.page {
+    display: none !important;
+}
+
+.page.active-page {
+    display: block !important;
+}
+
+.bottom-nav {
+    position: fixed !important;
+    left: 50% !important;
+    bottom: 14px !important;
+    z-index: 9999 !important;
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 6px !important;
+    width: calc(100% - 28px) !important;
+    max-width: 520px !important;
+    padding: 8px !important;
+    background: rgba(255, 252, 247, 0.96) !important;
+    border: 1px solid rgba(239, 216, 197, 0.95) !important;
+    border-radius: 24px !important;
+    box-shadow: 0 12px 28px rgba(126, 80, 43, 0.16) !important;
+    backdrop-filter: blur(12px) !important;
+    transform: translateX(-50%) !important;
+}
+
+.bottom-nav-button {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 3px !important;
+    min-height: 54px !important;
+    color: var(--color-muted) !important;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 18px !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    cursor: pointer !important;
+    box-shadow: none !important;
+}
+
+.bottom-nav-button .nav-icon {
+    font-size: 18px !important;
+    line-height: 1 !important;
+}
+
+.bottom-nav-button.active-nav {
+    color: var(--color-primary-dark) !important;
+    background: var(--color-card-soft) !important;
+    box-shadow: inset 0 0 0 1px rgba(239, 216, 197, 0.8) !important;
+}
+
+/* ==============================
+   v1.6 体重记录与周平均趋势
+   ============================== */
+
+.weight-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+.weight-stats-grid div {
+    padding: 14px;
+    background: var(--color-card-soft);
+    border: 1px solid rgba(239, 216, 197, 0.7);
+    border-radius: 16px;
+}
+
+.weight-stats-grid strong {
+    display: block;
+    margin-top: 4px;
+    color: var(--color-primary-dark);
+    font-size: 20px;
+}
+
+.weight-diff-down {
+    color: #2f8f5b !important;
+}
+
+.weight-diff-up {
+    color: var(--color-danger) !important;
+}
+
+.weight-diff-flat {
+    color: var(--color-muted) !important;
+}
+
+/* ==============================
+   v1.6 体重记录辅助样式
+   ============================== */
+
+#weightDateText {
+    margin-bottom: 14px;
+}
+
+#dailyWeightInput {
+    font-weight: 700;
+}
+
+#saveWeightButton {
+    margin-top: 4px;
+}
+
+.weight-stats-grid .label {
+    color: var(--color-muted);
+    font-size: 13px;
+}
+
+.weight-stats-grid strong[id="currentWeekAverageText"],
+.weight-stats-grid strong[id="previousWeekAverageText"] {
+    color: var(--color-primary-dark);
+}
+
+.weight-stats-grid strong[id="weekDifferenceText"],
+.weight-stats-grid strong[id="firstWeekDifferenceText"] {
+    font-weight: 800;
+}

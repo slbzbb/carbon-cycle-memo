@@ -26,6 +26,7 @@ const DEFAULT_SETTINGS = {
 const STORAGE_KEYS = {
     records: "carbonCycleRecords",
     settings: "carbonCycleSettings",
+    weightRecords: "carbonCycleWeightRecords",
 };
 
 const MODE_LABELS = {
@@ -130,6 +131,15 @@ const calendarTitle = document.getElementById("calendarTitle");
 const calendarGrid = document.getElementById("calendarGrid");
 const prevMonthButton = document.getElementById("prevMonthButton");
 const nextMonthButton = document.getElementById("nextMonthButton");
+
+const weightDateText = document.getElementById("weightDateText");
+const dailyWeightInput = document.getElementById("dailyWeightInput");
+const saveWeightButton = document.getElementById("saveWeightButton");
+
+const currentWeekAverageText = document.getElementById("currentWeekAverageText");
+const previousWeekAverageText = document.getElementById("previousWeekAverageText");
+const weekDifferenceText = document.getElementById("weekDifferenceText");
+const firstWeekDifferenceText = document.getElementById("firstWeekDifferenceText");
 
 const settingsModal = document.getElementById("settingsModal");
 const openSettingsButton = document.getElementById("openSettingsButton");
@@ -256,6 +266,48 @@ function formatDisplayDate(dateText) {
     const [year, month, day] = dateText.split("-");
 
     return `${year}年${Number(month)}月${Number(day)}日`;
+}
+
+/**
+ * yyyy-mm-dd を Date に変換する
+ *
+ * @param {string} dateText - 日期文本
+ * @returns {Date}
+ */
+function parseDateText(dateText) {
+    const [year, month, day] = dateText.split("-").map(Number);
+
+    return new Date(year, month - 1, day);
+}
+
+/**
+ * 指定日の週開始日（月曜日）を取得する
+ *
+ * @param {string} dateText - 日期文本
+ * @returns {string}
+ */
+function getWeekStartDateText(dateText) {
+    const date = parseDateText(dateText);
+    const day = date.getDay();
+    const diffToMonday = day === 0 ? -6 : 1 - day;
+
+    date.setDate(date.getDate() + diffToMonday);
+
+    return formatDate(date);
+}
+
+/**
+ * 指定日の前週開始日（月曜日）を取得する
+ *
+ * @param {string} dateText - 日期文本
+ * @returns {string}
+ */
+function getPreviousWeekStartDateText(dateText) {
+    const date = parseDateText(getWeekStartDateText(dateText));
+
+    date.setDate(date.getDate() - 7);
+
+    return formatDate(date);
 }
 
 /**
@@ -814,6 +866,237 @@ function saveRecords(records) {
 }
 
 /**
+ * localStorageから体重記録を取得する
+ *
+ * @returns {Array}
+ */
+function loadWeightRecords() {
+    const savedText = localStorage.getItem(STORAGE_KEYS.weightRecords);
+
+    if (!savedText) {
+        return [];
+    }
+
+    try {
+        return JSON.parse(savedText);
+    } catch (error) {
+        console.error("体重记录读取失败", error);
+        return [];
+    }
+}
+
+/**
+ * localStorageへ体重記録を保存する
+ *
+ * @param {Array} weightRecords - 体重记录数组
+ */
+function saveWeightRecords(weightRecords) {
+    localStorage.setItem(
+        STORAGE_KEYS.weightRecords,
+        JSON.stringify(weightRecords)
+    );
+}
+
+/**
+ * 指定日の体重記録を取得する
+ *
+ * @param {string} dateText - 日期文本
+ * @returns {Object | null}
+ */
+function findWeightRecordByDate(dateText) {
+    const weightRecords = loadWeightRecords();
+
+    return weightRecords.find((record) => record.date === dateText) || null;
+}
+
+/**
+ * 当前日期体重を保存する
+ */
+function saveSelectedDateWeight() {
+    const weightKg = getNumberValue(dailyWeightInput);
+
+    if (weightKg <= 0) {
+        alert("请输入有效的体重。");
+        return;
+    }
+
+    const weightRecords = loadWeightRecords();
+
+    const newRecord = {
+        date: selectedDate,
+        weightKg,
+    };
+
+    const filteredRecords = weightRecords.filter((record) => {
+        return record.date !== selectedDate;
+    });
+
+    filteredRecords.push(newRecord);
+    filteredRecords.sort((a, b) => {
+        return a.date.localeCompare(b.date);
+    });
+
+    saveWeightRecords(filteredRecords);
+    updateWeightDisplay();
+
+    alert("体重已保存");
+}
+
+/**
+ * 指定週の体重記録を取得する
+ *
+ * @param {string} weekStartDateText - 週開始日
+ * @returns {Array}
+ */
+function getWeightRecordsByWeekStart(weekStartDateText) {
+    const weightRecords = loadWeightRecords();
+    const weekStartDate = parseDateText(weekStartDateText);
+    const weekEndDate = parseDateText(weekStartDateText);
+
+    weekEndDate.setDate(weekEndDate.getDate() + 6);
+
+    return weightRecords.filter((record) => {
+        const recordDate = parseDateText(record.date);
+
+        return recordDate >= weekStartDate && recordDate <= weekEndDate;
+    });
+}
+
+/**
+ * 体重平均を計算する
+ *
+ * @param {Array} records - 体重记录数组
+ * @returns {number | null}
+ */
+function calculateAverageWeight(records) {
+    if (!Array.isArray(records) || records.length === 0) {
+        return null;
+    }
+
+    const total = records.reduce((sum, record) => {
+        return sum + record.weightKg;
+    }, 0);
+
+    return Number((total / records.length).toFixed(2));
+}
+
+/**
+ * 最初に体重記録がある週の開始日を取得する
+ *
+ * @returns {string | null}
+ */
+function getFirstRecordedWeekStartDateText() {
+    const weightRecords = loadWeightRecords();
+
+    if (weightRecords.length === 0) {
+        return null;
+    }
+
+    const sortedRecords = [...weightRecords].sort((a, b) => {
+        return a.date.localeCompare(b.date);
+    });
+
+    return getWeekStartDateText(sortedRecords[0].date);
+}
+
+/**
+ * 差分表示を作成する
+ *
+ * @param {number | null} currentAverage - 本周平均
+ * @param {number | null} compareAverage - 比较对象平均
+ * @returns {string}
+ */
+function formatWeightDifference(currentAverage, compareAverage) {
+    if (currentAverage === null || compareAverage === null) {
+        return "-";
+    }
+
+    const difference = Number((currentAverage - compareAverage).toFixed(2));
+
+    if (difference > 0) {
+        return `+${difference} kg`;
+    }
+
+    if (difference < 0) {
+        return `${difference} kg`;
+    }
+
+    return "±0 kg";
+}
+
+/**
+ * 体重差分の色を更新する
+ *
+ * @param {HTMLElement} element - 表示元素
+ * @param {string} text - 差分文字
+ */
+function updateWeightDifferenceClass(element, text) {
+    element.classList.remove("weight-diff-down", "weight-diff-up", "weight-diff-flat");
+
+    if (text.startsWith("-")) {
+        element.classList.add("weight-diff-down");
+        return;
+    }
+
+    if (text.startsWith("+")) {
+        element.classList.add("weight-diff-up");
+        return;
+    }
+
+    element.classList.add("weight-diff-flat");
+}
+
+/**
+ * 体重表示を更新する
+ */
+function updateWeightDisplay() {
+    const weightRecord = findWeightRecordByDate(selectedDate);
+
+    weightDateText.textContent = formatDisplayDate(selectedDate);
+    dailyWeightInput.value = weightRecord ? weightRecord.weightKg : "";
+
+    const currentWeekStart = getWeekStartDateText(selectedDate);
+    const previousWeekStart = getPreviousWeekStartDateText(selectedDate);
+    const firstWeekStart = getFirstRecordedWeekStartDateText();
+
+    const currentWeekAverage = calculateAverageWeight(
+        getWeightRecordsByWeekStart(currentWeekStart)
+    );
+
+    const previousWeekAverage = calculateAverageWeight(
+        getWeightRecordsByWeekStart(previousWeekStart)
+    );
+
+    const firstWeekAverage = firstWeekStart
+        ? calculateAverageWeight(getWeightRecordsByWeekStart(firstWeekStart))
+        : null;
+
+    currentWeekAverageText.textContent = currentWeekAverage === null
+        ? "-"
+        : `${currentWeekAverage} kg`;
+
+    previousWeekAverageText.textContent = previousWeekAverage === null
+        ? "-"
+        : `${previousWeekAverage} kg`;
+
+    const weekDifference = formatWeightDifference(
+        currentWeekAverage,
+        previousWeekAverage
+    );
+
+    const firstWeekDifference = formatWeightDifference(
+        currentWeekAverage,
+        firstWeekAverage
+    );
+
+    weekDifferenceText.textContent = weekDifference;
+    firstWeekDifferenceText.textContent = firstWeekDifference;
+
+    updateWeightDifferenceClass(weekDifferenceText, weekDifference);
+    updateWeightDifferenceClass(firstWeekDifferenceText, firstWeekDifference);
+}
+
+/**
  * 指定日の記録を取得する
  *
  * @param {string} dateText - yyyy-mm-dd
@@ -1306,6 +1589,7 @@ function selectDate(dateText) {
     renderCalendar();
     renderSelectedDateRecord();
     updateTargetDisplay();
+    updateWeightDisplay();
 }
 
 /**
@@ -1586,6 +1870,7 @@ function bindMealInputEvents() {
 }
 
 saveButton.addEventListener("click", saveSelectedDateRecord);
+saveWeightButton.addEventListener("click", saveSelectedDateWeight);
 
 prevMonthButton.addEventListener("click", moveToPrevMonth);
 nextMonthButton.addEventListener("click", moveToNextMonth);
@@ -1614,6 +1899,7 @@ bindMealInputEvents();
 renderCalendar();
 renderSelectedDateRecord();
 updateTargetDisplay();
+updateWeightDisplay();
 
 if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
