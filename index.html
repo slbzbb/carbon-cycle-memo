@@ -263,7 +263,35 @@
                     建议每天早起上厕所后、空腹、同一条件下记录体重。单日体重容易受水分、盐分、碳水和训练影响，周平均更有参考价值。
                 </p>
             </section>
+            <!-- ==============================
+                 v1.8 自定义趋势起始周
+                 ============================== -->
+            <section class="card trend-start-card">
+                <h2>趋势起始周</h2>
 
+                <p class="settings-action-text">
+                    可以把正式减脂、备赛或增肌开始的日期设为起点。「较起始周」会按照这个日期所在的周来计算。
+                </p>
+
+                <div class="form-group">
+                    <label for="trendStartDateInput">趋势起始日</label>
+                    <input id="trendStartDateInput" type="date" />
+                </div>
+
+                <div class="trend-start-button-grid">
+                    <button id="saveTrendStartDateButton" class="primary-button" type="button">
+                        保存起始日
+                    </button>
+
+                    <button id="clearTrendStartDateButton" class="setting-button secondary-button" type="button">
+                        清除设置
+                    </button>
+                </div>
+
+                <p class="help-text" id="trendStartDateHelpText">
+                    未设置时，会自动使用第一条体重记录所在周作为起始周。
+                </p>
+            </section>
             <!-- v1.6 周平均趋势 -->
             <section class="card">
                 <h2>周平均趋势</h2>
@@ -289,6 +317,51 @@
                         <strong id="firstWeekDifferenceText">-</strong>
                     </div>
                 </div>
+            </section>
+            <!-- ==============================
+                 v1.9 体重趋势图
+                 内容：按时间范围显示体重折线图
+                 ============================== -->
+            <section class="card weight-chart-card">
+                <h2>体重趋势图</h2>
+
+                <p class="settings-action-text">
+                    根据已保存的每日体重记录绘制趋势图。可以切换 1周、1个月、3个月、6个月、1年范围，观察体重变化方向。
+                </p>
+
+                <div class="chart-range-button-grid">
+                    <button class="chart-range-button active-chart-range" data-range="7" type="button">
+                        1周
+                    </button>
+
+                    <button class="chart-range-button" data-range="30" type="button">
+                        1个月
+                    </button>
+
+                    <button class="chart-range-button" data-range="90" type="button">
+                        3个月
+                    </button>
+
+                    <button class="chart-range-button" data-range="180" type="button">
+                        6个月
+                    </button>
+
+                    <button class="chart-range-button" data-range="365" type="button">
+                        1年
+                    </button>
+                </div>
+
+                <div class="weight-chart-wrapper">
+                    <canvas id="weightChartCanvas" width="640" height="360"></canvas>
+                </div>
+
+                <p class="empty-text" id="weightChartEmptyText">
+                    当前范围内还没有足够的体重记录。
+                </p>
+
+                <p class="help-text">
+                    折线图会自动读取体重记录。建议至少记录 3 天以上，再观察趋势会更准确。
+                </p>
             </section>
         </section>
 
@@ -361,7 +434,7 @@
 
                     <div class="form-group hidden" id="manualOffsetGroup">
                         <label for="manualCalorieOffset">手动热量调整 kcal</label>
-                        <input id="manualCalorieOffset" inputmode="numeric" placeholder="例如 -450" type="number" />
+                        <input id="manualCalorieOffset" inputmode="numeric" placeholder="例如 -450" type="text" />
                     </div>
 
                     <div class="form-group">
@@ -427,7 +500,7 @@
                     </button>
                 </div>
             </section>
-    <!-- ==============================
+            <!-- ==============================
      v1.7 数据备份与恢复
      ============================== -->
             <section class="card backup-card">
@@ -642,7 +715,7 @@
     <!-- ==============================
          JavaScript
          ============================== -->
-    <script src="script.js?v=18"></script>
+    <script src="script.js?v=20"></script>
 </body>
 
 </html>

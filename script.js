@@ -1,5 +1,5 @@
 /* ==============================
-   碳循环小记 - v1.3.1 功能逻辑
+   碳循环小记 - v1.9 功能逻辑
    ============================== */
 
 const DEFAULT_SETTINGS = {
@@ -21,6 +21,8 @@ const DEFAULT_SETTINGS = {
     proteinPercent: 30,
     carbsPercent: 45,
     fatPercent: 25,
+
+    trendStartDate: "",
 };
 
 const STORAGE_KEYS = {
@@ -59,6 +61,7 @@ const MEAL_TYPE_LABELS = {
 let selectedDate = getTodayDateText();
 let calendarViewDate = new Date();
 let editingMealId = null;
+let currentChartRangeDays = 7;
 
 const openIntroButton = document.getElementById("openIntroButton");
 const closeIntroButton = document.getElementById("closeIntroButton");
@@ -141,6 +144,15 @@ const previousWeekAverageText = document.getElementById("previousWeekAverageText
 const weekDifferenceText = document.getElementById("weekDifferenceText");
 const firstWeekDifferenceText = document.getElementById("firstWeekDifferenceText");
 
+const trendStartDateInput = document.getElementById("trendStartDateInput");
+const saveTrendStartDateButton = document.getElementById("saveTrendStartDateButton");
+const clearTrendStartDateButton = document.getElementById("clearTrendStartDateButton");
+const trendStartDateHelpText = document.getElementById("trendStartDateHelpText");
+
+const weightChartCanvas = document.getElementById("weightChartCanvas");
+const weightChartEmptyText = document.getElementById("weightChartEmptyText");
+const chartRangeButtons = document.querySelectorAll(".chart-range-button");
+
 const settingsModal = document.getElementById("settingsModal");
 const openSettingsButton = document.getElementById("openSettingsButton");
 const closeSettingsButton = document.getElementById("closeSettingsButton");
@@ -222,11 +234,13 @@ function roundNumber(value) {
 /**
  * 数值输入を安全に取得する
  *
+ * 空白入りの入力やマイナス値にも対応する。
+ *
  * @param {HTMLInputElement | HTMLSelectElement} inputElement - 输入框或选择框
  * @returns {number}
  */
 function getNumberValue(inputElement) {
-    const value = Number(inputElement.value);
+    const value = Number(String(inputElement.value).trim());
 
     if (Number.isNaN(value)) {
         return 0;
@@ -941,7 +955,9 @@ function saveSelectedDateWeight() {
     });
 
     saveWeightRecords(filteredRecords);
+    updateTrendStartDateDisplay();
     updateWeightDisplay();
+    drawWeightChart();
 
     alert("体重已保存");
 }
@@ -1004,6 +1020,92 @@ function getFirstRecordedWeekStartDateText() {
 }
 
 /**
+ * v1.8 自定义起始日を保存する
+ */
+function saveTrendStartDate() {
+    const trendStartDate = trendStartDateInput ? trendStartDateInput.value : "";
+
+    if (!trendStartDate) {
+        alert("请选择趋势起始日。");
+        return;
+    }
+
+    const settings = {
+        ...loadSettings(),
+        trendStartDate,
+    };
+
+    saveSettings(settings);
+    updateTrendStartDateDisplay();
+    updateWeightDisplay();
+    drawWeightChart();
+
+    alert("趋势起始日已保存。");
+}
+
+/**
+ * v1.8 自定义起始日を清除する
+ */
+function clearTrendStartDate() {
+    const settings = {
+        ...loadSettings(),
+        trendStartDate: "",
+    };
+
+    saveSettings(settings);
+    updateTrendStartDateDisplay();
+    updateWeightDisplay();
+    drawWeightChart();
+
+    alert("趋势起始日已清除。将重新使用第一条体重记录所在周。");
+}
+
+/**
+ * v1.8 有效起始周を取得する
+ *
+ * 有自定义起始日：使用自定义日期所在周
+ * 没有自定义起始日：使用第一条体重记录所在周
+ *
+ * @returns {string | null}
+ */
+function getEffectiveTrendStartWeekDateText() {
+    const settings = loadSettings();
+
+    if (settings.trendStartDate) {
+        return getWeekStartDateText(settings.trendStartDate);
+    }
+
+    return getFirstRecordedWeekStartDateText();
+}
+
+/**
+ * v1.8 起始日显示を更新する
+ */
+function updateTrendStartDateDisplay() {
+    if (!trendStartDateInput || !trendStartDateHelpText) {
+        return;
+    }
+
+    const settings = loadSettings();
+    const trendStartDate = settings.trendStartDate || "";
+    const effectiveWeekStart = getEffectiveTrendStartWeekDateText();
+
+    trendStartDateInput.value = trendStartDate;
+
+    if (trendStartDate) {
+        trendStartDateHelpText.textContent = `当前起始周：${formatDisplayDate(effectiveWeekStart)} 开始。`;
+        return;
+    }
+
+    if (effectiveWeekStart) {
+        trendStartDateHelpText.textContent = `未手动设置，当前使用第一条体重记录所在周：${formatDisplayDate(effectiveWeekStart)} 开始。`;
+        return;
+    }
+
+    trendStartDateHelpText.textContent = "未设置时，会自动使用第一条体重记录所在周作为起始周。";
+}
+
+/**
  * 差分表示を作成する
  *
  * @param {number | null} currentAverage - 本周平均
@@ -1061,7 +1163,7 @@ function updateWeightDisplay() {
 
     const currentWeekStart = getWeekStartDateText(selectedDate);
     const previousWeekStart = getPreviousWeekStartDateText(selectedDate);
-    const firstWeekStart = getFirstRecordedWeekStartDateText();
+    const firstWeekStart = getEffectiveTrendStartWeekDateText();
 
     const currentWeekAverage = calculateAverageWeight(
         getWeightRecordsByWeekStart(currentWeekStart)
@@ -1101,7 +1203,286 @@ function updateWeightDisplay() {
 }
 
 /**
- * v1.7 全データをエクスポートする
+ * v1.9 指定期間の体重記録を取得する
+ *
+ * @param {number} rangeDays - 表示期間の日数
+ * @returns {Array}
+ */
+function getWeightRecordsByRange(rangeDays) {
+    const weightRecords = loadWeightRecords();
+
+    if (!Array.isArray(weightRecords) || weightRecords.length === 0) {
+        return [];
+    }
+
+    const endDate = parseDateText(selectedDate);
+    const startDate = parseDateText(selectedDate);
+
+    startDate.setDate(startDate.getDate() - rangeDays + 1);
+
+    return weightRecords
+        .filter((record) => {
+            const recordDate = parseDateText(record.date);
+
+            return recordDate >= startDate && recordDate <= endDate;
+        })
+        .sort((a, b) => {
+            return a.date.localeCompare(b.date);
+        });
+}
+
+/**
+ * v1.9 体重グラフの表示範囲を変更する
+ *
+ * @param {number} rangeDays - 表示期間の日数
+ */
+function changeWeightChartRange(rangeDays) {
+    currentChartRangeDays = rangeDays;
+
+    chartRangeButtons.forEach((button) => {
+        const buttonRange = Number(button.dataset.range);
+
+        button.classList.toggle(
+            "active-chart-range",
+            buttonRange === currentChartRangeDays
+        );
+    });
+
+    drawWeightChart();
+}
+
+/**
+ * v1.9 体重グラフ用の日付ラベルを作成する
+ *
+ * @param {string} dateText - yyyy-mm-dd
+ * @returns {string}
+ */
+function formatChartDateLabel(dateText) {
+    const [, month, day] = dateText.split("-");
+
+    return `${Number(month)}/${Number(day)}`;
+}
+
+/**
+ * v1.9 体重グラフを描画する
+ */
+function drawWeightChart() {
+    if (!weightChartCanvas || !weightChartEmptyText) {
+        return;
+    }
+
+    const ctx = weightChartCanvas.getContext("2d");
+    const records = getWeightRecordsByRange(currentChartRangeDays);
+
+    clearWeightChart(ctx);
+
+    if (records.length < 2) {
+        weightChartEmptyText.classList.remove("hidden");
+        return;
+    }
+
+    weightChartEmptyText.classList.add("hidden");
+
+    const canvasWidth = weightChartCanvas.width;
+    const canvasHeight = weightChartCanvas.height;
+
+    const padding = {
+        top: 34,
+        right: 30,
+        bottom: 52,
+        left: 56,
+    };
+
+    const chartWidth = canvasWidth - padding.left - padding.right;
+    const chartHeight = canvasHeight - padding.top - padding.bottom;
+
+    const weights = records.map((record) => record.weightKg);
+    const minWeight = Math.min(...weights);
+    const maxWeight = Math.max(...weights);
+    const rangeWeight = Math.max(maxWeight - minWeight, 0.5);
+
+    const scaleMin = minWeight - rangeWeight * 0.2;
+    const scaleMax = maxWeight + rangeWeight * 0.2;
+
+    drawChartBackground(ctx, canvasWidth, canvasHeight);
+    drawChartGrid(ctx, padding, chartWidth, chartHeight, scaleMin, scaleMax);
+    drawChartLine(ctx, records, padding, chartWidth, chartHeight, scaleMin, scaleMax);
+    drawChartLabels(ctx, records, padding, chartWidth, chartHeight, scaleMin, scaleMax);
+}
+
+/**
+ * v1.9 グラフをクリアする
+ *
+ * @param {CanvasRenderingContext2D} ctx - canvas context
+ */
+function clearWeightChart(ctx) {
+    ctx.clearRect(0, 0, weightChartCanvas.width, weightChartCanvas.height);
+}
+
+/**
+ * v1.9 グラフ背景を描画する
+ *
+ * @param {CanvasRenderingContext2D} ctx - canvas context
+ * @param {number} canvasWidth - canvas 宽度
+ * @param {number} canvasHeight - canvas 高度
+ */
+function drawChartBackground(ctx, canvasWidth, canvasHeight) {
+    ctx.fillStyle = "#fffaf3";
+    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+}
+
+/**
+ * v1.9 グラフ目盛りを描画する
+ *
+ * @param {CanvasRenderingContext2D} ctx - canvas context
+ * @param {Object} padding - 内边距
+ * @param {number} chartWidth - 图表宽度
+ * @param {number} chartHeight - 图表高度
+ * @param {number} scaleMin - 最小刻度
+ * @param {number} scaleMax - 最大刻度
+ */
+function drawChartGrid(ctx, padding, chartWidth, chartHeight, scaleMin, scaleMax) {
+    const gridCount = 4;
+
+    ctx.strokeStyle = "#efd8c5";
+    ctx.lineWidth = 1;
+    ctx.font = "18px -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif";
+    ctx.fillStyle = "#8a7566";
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
+
+    for (let i = 0; i <= gridCount; i += 1) {
+        const ratio = i / gridCount;
+        const y = padding.top + chartHeight * ratio;
+        const value = scaleMax - (scaleMax - scaleMin) * ratio;
+
+        ctx.beginPath();
+        ctx.moveTo(padding.left, y);
+        ctx.lineTo(padding.left + chartWidth, y);
+        ctx.stroke();
+
+        ctx.fillText(`${value.toFixed(1)}`, padding.left - 12, y);
+    }
+}
+
+/**
+ * v1.9 体重折線を描画する
+ *
+ * @param {CanvasRenderingContext2D} ctx - canvas context
+ * @param {Array} records - 体重记录
+ * @param {Object} padding - 内边距
+ * @param {number} chartWidth - 图表宽度
+ * @param {number} chartHeight - 图表高度
+ * @param {number} scaleMin - 最小刻度
+ * @param {number} scaleMax - 最大刻度
+ */
+function drawChartLine(ctx, records, padding, chartWidth, chartHeight, scaleMin, scaleMax) {
+    const points = records.map((record, index) => {
+        const xRatio = records.length === 1
+            ? 0
+            : index / (records.length - 1);
+
+        const yRatio = (record.weightKg - scaleMin) / (scaleMax - scaleMin);
+
+        return {
+            x: padding.left + chartWidth * xRatio,
+            y: padding.top + chartHeight * (1 - yRatio),
+            weightKg: record.weightKg,
+        };
+    });
+
+    ctx.strokeStyle = "#c26a2e";
+    ctx.lineWidth = 5;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+
+    ctx.beginPath();
+
+    points.forEach((point, index) => {
+        if (index === 0) {
+            ctx.moveTo(point.x, point.y);
+            return;
+        }
+
+        ctx.lineTo(point.x, point.y);
+    });
+
+    ctx.stroke();
+
+    points.forEach((point) => {
+        ctx.beginPath();
+        ctx.fillStyle = "#fffdf9";
+        ctx.arc(point.x, point.y, 8, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.fillStyle = "#c26a2e";
+        ctx.arc(point.x, point.y, 5, 0, Math.PI * 2);
+        ctx.fill();
+    });
+}
+
+/**
+ * v1.9 グラフの日付・数値ラベルを描画する
+ *
+ * @param {CanvasRenderingContext2D} ctx - canvas context
+ * @param {Array} records - 体重记录
+ * @param {Object} padding - 内边距
+ * @param {number} chartWidth - 图表宽度
+ * @param {number} chartHeight - 图表高度
+ * @param {number} scaleMin - 最小刻度
+ * @param {number} scaleMax - 最大刻度
+ */
+function drawChartLabels(ctx, records, padding, chartWidth, chartHeight, scaleMin, scaleMax) {
+    const labelStep = Math.max(1, Math.ceil(records.length / 4));
+
+    ctx.font = "18px -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif";
+    ctx.fillStyle = "#8a7566";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+
+    records.forEach((record, index) => {
+        if (index % labelStep !== 0 && index !== records.length - 1) {
+            return;
+        }
+
+        const xRatio = records.length === 1
+            ? 0
+            : index / (records.length - 1);
+
+        const x = padding.left + chartWidth * xRatio;
+        const y = padding.top + chartHeight + 16;
+
+        ctx.fillText(formatChartDateLabel(record.date), x, y);
+    });
+
+    const latestRecord = records[records.length - 1];
+    const latestYRatio = (latestRecord.weightKg - scaleMin) / (scaleMax - scaleMin);
+    const latestY = padding.top + chartHeight * (1 - latestYRatio);
+
+    const latestX = padding.left + chartWidth - 8;
+    const labelY = Math.max(padding.top + 24, latestY - 12);
+
+    ctx.font = "bold 20px -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif";
+    ctx.fillStyle = "#9a4f21";
+    ctx.textAlign = "right";
+    ctx.textBaseline = "bottom";
+    ctx.fillText(`${latestRecord.weightKg} kg`, latestX, labelY);
+}
+
+/**
+ * v1.9 体重グラフの期間ボタンイベントを設定する
+ */
+function bindWeightChartEvents() {
+    chartRangeButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+            changeWeightChartRange(Number(button.dataset.range));
+        });
+    });
+}
+
+/**
+ * v1.9 全データをエクスポートする
  *
  * 导出内容：
  * - 饮食记录
@@ -1111,7 +1492,7 @@ function updateWeightDisplay() {
 function exportBackupData() {
     const backupData = {
         appName: "碳循环小记",
-        version: "1.7",
+        version: "1.9",
         exportedAt: new Date().toISOString(),
         data: {
             records: loadRecords(),
@@ -1128,7 +1509,7 @@ function exportBackupData() {
 }
 
 /**
- * v1.7 备份文本をクリップボードへコピーする
+ * v1.9 备份文本をクリップボードへコピーする
  */
 function copyBackupData() {
     const text = backupDataText.value.trim();
@@ -1151,7 +1532,7 @@ function copyBackupData() {
 }
 
 /**
- * v1.7 バックアップデータをインポートする
+ * v1.9 バックアップデータをインポートする
  *
  * 导入会覆盖当前 localStorage 中的 App 数据
  */
@@ -1208,13 +1589,15 @@ function importBackupData() {
     renderCalendar();
     renderSelectedDateRecord();
     updateTargetDisplay();
+    updateTrendStartDateDisplay();
     updateWeightDisplay();
+    drawWeightChart();
 
     alert("数据导入完成。");
 }
 
 /**
- * v1.7 バックアップデータの形式を検証する
+ * v1.9 バックアップデータの形式を検証する
  *
  * @param {Object} backupData - 解析后的备份数据
  * @returns {boolean}
@@ -1740,7 +2123,9 @@ function selectDate(dateText) {
     renderCalendar();
     renderSelectedDateRecord();
     updateTargetDisplay();
+    updateTrendStartDateDisplay();
     updateWeightDisplay();
+    drawWeightChart();
 }
 
 /**
@@ -2038,12 +2423,22 @@ if (copyBackupButton) {
     copyBackupButton.addEventListener("click", copyBackupData);
 }
 
+if (saveTrendStartDateButton) {
+    saveTrendStartDateButton.addEventListener("click", saveTrendStartDate);
+}
+
+if (clearTrendStartDateButton) {
+    clearTrendStartDateButton.addEventListener("click", clearTrendStartDate);
+}
+
 prevMonthButton.addEventListener("click", moveToPrevMonth);
 nextMonthButton.addEventListener("click", moveToNextMonth);
+
 openIntroButton.addEventListener("click", openIntroModal);
 closeIntroButton.addEventListener("click", closeIntroModal);
 
 openSettingsButton.addEventListener("click", openSettingsModal);
+
 if (openIntroButtonInPage) {
     openIntroButtonInPage.addEventListener("click", openIntroModal);
 }
@@ -2051,6 +2446,7 @@ if (openIntroButtonInPage) {
 if (openSettingsButtonInPage) {
     openSettingsButtonInPage.addEventListener("click", openSettingsModal);
 }
+
 closeSettingsButton.addEventListener("click", closeSettingsModal);
 saveSettingsButton.addEventListener("click", saveUserSettings);
 
@@ -2065,11 +2461,14 @@ bindPageNavigationEvents();
 fillTargetSettingsForm();
 bindTargetSettingEvents();
 bindMealInputEvents();
+bindWeightChartEvents();
 
 renderCalendar();
 renderSelectedDateRecord();
 updateTargetDisplay();
+updateTrendStartDateDisplay();
 updateWeightDisplay();
+drawWeightChart();
 
 if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
