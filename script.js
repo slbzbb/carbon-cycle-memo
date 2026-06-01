@@ -1,5 +1,5 @@
 /* ==============================
-   碳循环小记 - v1.9 功能逻辑
+   碳循环小记 - v2.0 功能逻辑
    ============================== */
 
 const DEFAULT_SETTINGS = {
@@ -7,6 +7,7 @@ const DEFAULT_SETTINGS = {
     age: 26,
     heightCm: 176,
     weightKg: 77,
+    weightSource: "manual",
     bodyFatRate: 20,
     activityLevel: 1.6,
 
@@ -153,6 +154,24 @@ const weightChartCanvas = document.getElementById("weightChartCanvas");
 const weightChartEmptyText = document.getElementById("weightChartEmptyText");
 const chartRangeButtons = document.querySelectorAll(".chart-range-button");
 
+const weeklyRecordedDaysText = document.getElementById("weeklyRecordedDaysText");
+const weeklyAverageCaloriesText = document.getElementById("weeklyAverageCaloriesText");
+const weeklyAverageProteinText = document.getElementById("weeklyAverageProteinText");
+const weeklyProteinHitDaysText = document.getElementById("weeklyProteinHitDaysText");
+
+const weeklyAverageCarbsText = document.getElementById("weeklyAverageCarbsText");
+const weeklyAverageFatText = document.getElementById("weeklyAverageFatText");
+const weeklyCaloriesOverDaysText = document.getElementById("weeklyCaloriesOverDaysText");
+
+const profileWeightCompareText = document.getElementById("profileWeightCompareText");
+const profileWeightChangeText = document.getElementById("profileWeightChangeText");
+const profileWeightAdviceText = document.getElementById("profileWeightAdviceText");
+
+const weeklyHighCarbDaysText = document.getElementById("weeklyHighCarbDaysText");
+const weeklyMediumCarbDaysText = document.getElementById("weeklyMediumCarbDaysText");
+const weeklyLowCarbDaysText = document.getElementById("weeklyLowCarbDaysText");
+const weeklyCarbCycleAdviceText = document.getElementById("weeklyCarbCycleAdviceText");
+
 const settingsModal = document.getElementById("settingsModal");
 const openSettingsButton = document.getElementById("openSettingsButton");
 const closeSettingsButton = document.getElementById("closeSettingsButton");
@@ -162,6 +181,8 @@ const userGenderSelect = document.getElementById("userGender");
 const userAgeInput = document.getElementById("userAge");
 const userHeightInput = document.getElementById("userHeight");
 const userWeightInput = document.getElementById("userWeight");
+const userWeightSourceSelect = document.getElementById("userWeightSource");
+const userWeightSourceHelpText = document.getElementById("userWeightSourceHelpText");
 const userBodyFatInput = document.getElementById("userBodyFat");
 const activityLevelSelect = document.getElementById("activityLevel");
 
@@ -191,6 +212,10 @@ function switchPage(pageId) {
     bottomNavButtons.forEach((button) => {
         button.classList.toggle("active-nav", button.dataset.page === pageId);
     });
+
+    if (pageId === "profilePage") {
+        updateProfileDisplay();
+    }
 
     window.scrollTo({
         top: 0,
@@ -328,6 +353,8 @@ function getPreviousWeekStartDateText(dateText) {
     return formatDate(date);
 }
 
+
+
 /**
  * localStorageから設定を取得する
  *
@@ -352,6 +379,33 @@ function loadSettings() {
 }
 
 /**
+ * v2.0 计算用の設定を取得する
+ *
+ * weightSource が weeklyAverage の場合、
+ * 当前选择日期所在周の平均体重を优先して使用する。
+ *
+ * @returns {typeof DEFAULT_SETTINGS}
+ */
+function getCalculationSettings() {
+    const settings = loadSettings();
+
+    if (settings.weightSource !== "weeklyAverage") {
+        return settings;
+    }
+
+    const weeklyAverageWeight = getCurrentSelectedWeekAverageWeight();
+
+    if (weeklyAverageWeight === null) {
+        return settings;
+    }
+
+    return {
+        ...settings,
+        weightKg: weeklyAverageWeight,
+    };
+}
+
+/**
  * localStorageへ設定を保存する
  *
  * @param {typeof DEFAULT_SETTINGS} settings - 用户设置
@@ -373,17 +427,17 @@ function calculateBmr(settings) {
     if (settings.gender === "female") {
         return roundNumber(
             655 +
-                9.6 * settings.weightKg +
-                1.8 * settings.heightCm -
-                4.7 * settings.age
+            9.6 * settings.weightKg +
+            1.8 * settings.heightCm -
+            4.7 * settings.age
         );
     }
 
     return roundNumber(
         66 +
-            13.7 * settings.weightKg +
-            5 * settings.heightCm -
-            6.8 * settings.age
+        13.7 * settings.weightKg +
+        5 * settings.heightCm -
+        6.8 * settings.age
     );
 }
 
@@ -507,7 +561,7 @@ function buildMacroTarget(totalCalories, protein, fat) {
  * @returns {{protein: number, carbs: number, fat: number}}
  */
 function getCurrentTarget() {
-    const settings = loadSettings();
+    const settings = getCalculationSettings();
     const targetMode = targetCalculationModeSelect.value;
 
     if (targetMode === "custom") {
@@ -621,7 +675,7 @@ function getCurrentTargetCalories(target) {
         return calculateCalories(target.protein, target.carbs, target.fat);
     }
 
-    const settings = loadSettings();
+    const settings = getCalculationSettings();
     const bmr = calculateBmr(settings);
     const tdee = calculateTdee(bmr, settings.activityLevel);
     const calorieOffset = getSelectedCalorieOffset();
@@ -955,9 +1009,15 @@ function saveSelectedDateWeight() {
     });
 
     saveWeightRecords(filteredRecords);
+
     updateTrendStartDateDisplay();
     updateWeightDisplay();
     drawWeightChart();
+    updateProfileDisplay();
+
+    if (settingsModal && !settingsModal.classList.contains("hidden")) {
+        updateUserWeightBySource();
+    }
 
     alert("体重已保存");
 }
@@ -1039,6 +1099,7 @@ function saveTrendStartDate() {
     updateTrendStartDateDisplay();
     updateWeightDisplay();
     drawWeightChart();
+    updateProfileDisplay();
 
     alert("趋势起始日已保存。");
 }
@@ -1056,6 +1117,7 @@ function clearTrendStartDate() {
     updateTrendStartDateDisplay();
     updateWeightDisplay();
     drawWeightChart();
+    updateProfileDisplay();
 
     alert("趋势起始日已清除。将重新使用第一条体重记录所在周。");
 }
@@ -1200,6 +1262,274 @@ function updateWeightDisplay() {
 
     updateWeightDifferenceClass(weekDifferenceText, weekDifference);
     updateWeightDifferenceClass(firstWeekDifferenceText, firstWeekDifference);
+}
+/**
+ * v2.0 当前选择日期所在周の饮食记录を取得する
+ *
+ * @returns {Array}
+ */
+function getCurrentWeekDietRecords() {
+    const records = loadRecords();
+    const weekStartDate = parseDateText(getWeekStartDateText(selectedDate));
+    const weekEndDate = parseDateText(getWeekStartDateText(selectedDate));
+
+    weekEndDate.setDate(weekEndDate.getDate() + 6);
+
+    return records
+        .filter((record) => {
+            const recordDate = parseDateText(record.date);
+
+            return recordDate >= weekStartDate && recordDate <= weekEndDate;
+        })
+        .sort((a, b) => {
+            return a.date.localeCompare(b.date);
+        });
+}
+
+/**
+ * v2.0 平均値を計算する
+ *
+ * @param {number} total - 合计
+ * @param {number} count - 数量
+ * @returns {number}
+ */
+function calculateAverageValue(total, count) {
+    if (count <= 0) {
+        return 0;
+    }
+
+    return Math.round(total / count);
+}
+
+/**
+ * v2.0 周总结を更新する
+ */
+function updateWeeklySummaryDisplay() {
+    if (!weeklyRecordedDaysText) {
+        return;
+    }
+
+    const weekRecords = getCurrentWeekDietRecords();
+    const recordedDays = weekRecords.length;
+
+    if (recordedDays === 0) {
+        weeklyRecordedDaysText.textContent = "0 / 7";
+        weeklyAverageCaloriesText.textContent = "-";
+        weeklyAverageProteinText.textContent = "-";
+        weeklyProteinHitDaysText.textContent = "-";
+        weeklyAverageCarbsText.textContent = "平均碳水：-";
+        weeklyAverageFatText.textContent = "平均脂肪：-";
+        weeklyCaloriesOverDaysText.textContent = "热量超标天数：-";
+        return;
+    }
+
+    const totals = weekRecords.reduce(
+        (sum, record) => {
+            const proteinHit = record.protein >= record.targetProtein ? 1 : 0;
+            const caloriesOver = record.calories > record.targetCalories ? 1 : 0;
+
+            return {
+                calories: sum.calories + record.calories,
+                protein: sum.protein + record.protein,
+                carbs: sum.carbs + record.carbs,
+                fat: sum.fat + record.fat,
+                proteinHitDays: sum.proteinHitDays + proteinHit,
+                caloriesOverDays: sum.caloriesOverDays + caloriesOver,
+            };
+        },
+        {
+            calories: 0,
+            protein: 0,
+            carbs: 0,
+            fat: 0,
+            proteinHitDays: 0,
+            caloriesOverDays: 0,
+        }
+    );
+
+    weeklyRecordedDaysText.textContent = `${recordedDays} / 7`;
+    weeklyAverageCaloriesText.textContent = `${calculateAverageValue(totals.calories, recordedDays)} kcal`;
+    weeklyAverageProteinText.textContent = `${calculateAverageValue(totals.protein, recordedDays)}g`;
+    weeklyProteinHitDaysText.textContent = `${totals.proteinHitDays} 天`;
+
+    weeklyAverageCarbsText.textContent =
+        `平均碳水：${calculateAverageValue(totals.carbs, recordedDays)}g`;
+
+    weeklyAverageFatText.textContent =
+        `平均脂肪：${calculateAverageValue(totals.fat, recordedDays)}g`;
+
+    weeklyCaloriesOverDaysText.textContent =
+        `热量超标天数：${totals.caloriesOverDays} 天`;
+}
+
+/**
+ * v2.0 体重变化速度の判断クラスをリセットする
+ */
+function resetProfileWeightStatusClass() {
+    const profileWeightMain = document.querySelector(".profile-weight-main");
+
+    if (!profileWeightMain) {
+        return;
+    }
+
+    profileWeightMain.classList.remove("is-good", "is-warning", "is-danger");
+}
+
+/**
+ * v2.0 体重变化速度を更新する
+ */
+function updateProfileWeightSpeedDisplay() {
+    if (!profileWeightCompareText) {
+        return;
+    }
+
+    resetProfileWeightStatusClass();
+
+    const profileWeightMain = document.querySelector(".profile-weight-main");
+
+    const currentWeekStart = getWeekStartDateText(selectedDate);
+    const previousWeekStart = getPreviousWeekStartDateText(selectedDate);
+
+    const currentWeekAverage = calculateAverageWeight(
+        getWeightRecordsByWeekStart(currentWeekStart)
+    );
+
+    const previousWeekAverage = calculateAverageWeight(
+        getWeightRecordsByWeekStart(previousWeekStart)
+    );
+
+    if (currentWeekAverage === null || previousWeekAverage === null) {
+        profileWeightCompareText.textContent = "本周与上周对比：-";
+        profileWeightChangeText.textContent = "-";
+        profileWeightAdviceText.textContent =
+            "需要同时拥有本周和上周的体重记录后，才能判断变化速度。";
+        return;
+    }
+
+    const difference = Number((currentWeekAverage - previousWeekAverage).toFixed(2));
+    const absDifference = Math.abs(difference);
+
+    profileWeightCompareText.textContent =
+        `本周 ${currentWeekAverage} kg / 上周 ${previousWeekAverage} kg`;
+
+    if (difference > 0) {
+        profileWeightChangeText.textContent = `+${difference} kg`;
+        profileWeightAdviceText.textContent =
+            "本周平均体重上升。可能是热量偏高，也可能受碳水、盐分、训练炎症和水分影响。建议结合腰围、镜子状态和饮食记录一起判断。";
+
+        if (profileWeightMain) {
+            profileWeightMain.classList.add("is-warning");
+        }
+
+        return;
+    }
+
+    if (difference === 0) {
+        profileWeightChangeText.textContent = "±0 kg";
+        profileWeightAdviceText.textContent =
+            "本周体重基本没有变化。如果目标是减脂，可以继续观察 3～5 天，或者小幅减少 100～150 kcal。";
+
+        if (profileWeightMain) {
+            profileWeightMain.classList.add("is-warning");
+        }
+
+        return;
+    }
+
+    profileWeightChangeText.textContent = `${difference} kg`;
+
+    if (absDifference < 0.2) {
+        profileWeightAdviceText.textContent =
+            "下降速度偏慢。如果你目前处于减脂期，可以考虑小幅减少热量，或增加一点有氧。";
+
+        if (profileWeightMain) {
+            profileWeightMain.classList.add("is-warning");
+        }
+
+        return;
+    }
+
+    if (absDifference <= 0.7) {
+        profileWeightAdviceText.textContent =
+            "下降速度比较稳定，适合继续当前饮食和训练安排。";
+
+        if (profileWeightMain) {
+            profileWeightMain.classList.add("is-good");
+        }
+
+        return;
+    }
+
+    profileWeightAdviceText.textContent =
+        "下降速度偏快。注意训练状态、力量表现、睡眠和饥饿感，必要时可以适当提高碳水或总热量。";
+
+    if (profileWeightMain) {
+        profileWeightMain.classList.add("is-danger");
+    }
+}
+
+/**
+ * v2.0 碳循环统计を更新する
+ */
+function updateWeeklyCarbCycleDisplay() {
+    if (!weeklyHighCarbDaysText) {
+        return;
+    }
+
+    const weekRecords = getCurrentWeekDietRecords();
+
+    const counts = weekRecords.reduce(
+        (sum, record) => {
+            if (record.dayType === "high" || record.customDayType === "high") {
+                sum.high += 1;
+            } else if (record.dayType === "low" || record.customDayType === "low") {
+                sum.low += 1;
+            } else {
+                sum.medium += 1;
+            }
+
+            return sum;
+        },
+        {
+            high: 0,
+            medium: 0,
+            low: 0,
+        }
+    );
+
+    weeklyHighCarbDaysText.textContent = `${counts.high} 天`;
+    weeklyMediumCarbDaysText.textContent = `${counts.medium} 天`;
+    weeklyLowCarbDaysText.textContent = `${counts.low} 天`;
+
+    if (weekRecords.length === 0) {
+        weeklyCarbCycleAdviceText.textContent =
+            "当前周还没有饮食记录，无法统计碳循环执行情况。";
+        return;
+    }
+
+    if (counts.low >= 4) {
+        weeklyCarbCycleAdviceText.textContent =
+            "本周低碳日较多。注意训练表现、恢复状态和情绪稳定，必要时安排中碳或高碳日。";
+        return;
+    }
+
+    if (counts.high >= 3) {
+        weeklyCarbCycleAdviceText.textContent =
+            "本周高碳日较多。如果体重下降变慢，需要确认总热量是否仍在目标范围内。";
+        return;
+    }
+
+    weeklyCarbCycleAdviceText.textContent =
+        "本周高 / 中 / 低碳日分布比较均衡，可以结合训练强度继续调整。";
+}
+
+/**
+ * v2.0 个人分析页をまとめて更新する
+ */
+function updateProfileDisplay() {
+    updateWeeklySummaryDisplay();
+    updateProfileWeightSpeedDisplay();
+    updateWeeklyCarbCycleDisplay();
 }
 
 /**
@@ -1492,7 +1822,7 @@ function bindWeightChartEvents() {
 function exportBackupData() {
     const backupData = {
         appName: "碳循环小记",
-        version: "1.9",
+        version: "2.0",
         exportedAt: new Date().toISOString(),
         data: {
             records: loadRecords(),
@@ -1592,6 +1922,7 @@ function importBackupData() {
     updateTrendStartDateDisplay();
     updateWeightDisplay();
     drawWeightChart();
+    updateProfileDisplay();
 
     alert("数据导入完成。");
 }
@@ -1705,6 +2036,7 @@ function saveSelectedDateRecord() {
     renderCalendar();
     renderSelectedDateRecord();
     updateTargetDisplay();
+    updateProfileDisplay();
 
     alert("餐食记录已保存");
 }
@@ -1941,6 +2273,7 @@ function deleteMeal(mealId) {
     renderSelectedDateRecord();
     renderCalendar();
     updateTargetDisplay();
+    updateProfileDisplay();
 }
 
 /**
@@ -1957,6 +2290,7 @@ function deleteRecordByDate(dateText) {
     renderCalendar();
     renderSelectedDateRecord();
     updateTargetDisplay();
+    updateProfileDisplay();
 }
 
 /**
@@ -2126,6 +2460,7 @@ function selectDate(dateText) {
     updateTrendStartDateDisplay();
     updateWeightDisplay();
     drawWeightChart();
+    updateProfileDisplay();
 }
 
 /**
@@ -2194,8 +2529,15 @@ function fillSettingsForm() {
     userAgeInput.value = settings.age;
     userHeightInput.value = settings.heightCm;
     userWeightInput.value = settings.weightKg;
+
+    if (userWeightSourceSelect) {
+        userWeightSourceSelect.value = settings.weightSource || "manual";
+    }
+
     userBodyFatInput.value = settings.bodyFatRate;
     activityLevelSelect.value = String(settings.activityLevel);
+
+    updateUserWeightBySource();
 }
 
 /**
@@ -2209,9 +2551,70 @@ function buildSettingsFromForm() {
         age: getNumberValue(userAgeInput),
         heightCm: getNumberValue(userHeightInput),
         weightKg: getNumberValue(userWeightInput),
+        weightSource: userWeightSourceSelect
+            ? userWeightSourceSelect.value
+            : "manual",
         bodyFatRate: getNumberValue(userBodyFatInput),
         activityLevel: getNumberValue(activityLevelSelect),
     };
+}
+
+/**
+ * v1.9.2 当前选择日期所在周の平均体重を取得する
+ *
+ * @returns {number | null}
+ */
+function getCurrentSelectedWeekAverageWeight() {
+    const currentWeekStart = getWeekStartDateText(selectedDate);
+    const weekRecords = getWeightRecordsByWeekStart(currentWeekStart);
+
+    return calculateAverageWeight(weekRecords);
+}
+
+/**
+ * v1.9.2 体重来源に応じて体重入力欄を更新する
+ */
+function updateUserWeightBySource() {
+    if (!userWeightSourceSelect || !userWeightInput) {
+        return;
+    }
+
+    if (userWeightSourceSelect.value !== "weeklyAverage") {
+        userWeightInput.readOnly = false;
+
+        if (userWeightSourceHelpText) {
+            userWeightSourceHelpText.textContent =
+                "当前使用手动输入体重。适合临时调整个人数据。";
+        }
+
+        updateSettingsPreview();
+        return;
+    }
+
+    const weeklyAverageWeight = getCurrentSelectedWeekAverageWeight();
+
+    if (weeklyAverageWeight === null) {
+        userWeightSourceSelect.value = "manual";
+        userWeightInput.readOnly = false;
+
+        if (userWeightSourceHelpText) {
+            userWeightSourceHelpText.textContent =
+                "当前周还没有体重记录，无法使用周平均。请先手动输入体重。";
+        }
+
+        updateSettingsPreview();
+        return;
+    }
+
+    userWeightInput.value = weeklyAverageWeight;
+    userWeightInput.readOnly = true;
+
+    if (userWeightSourceHelpText) {
+        userWeightSourceHelpText.textContent =
+            `当前使用本周平均体重：${weeklyAverageWeight} kg。`;
+    }
+
+    updateSettingsPreview();
 }
 
 /**
@@ -2453,6 +2856,10 @@ saveSettingsButton.addEventListener("click", saveUserSettings);
 userGenderSelect.addEventListener("change", updateSettingsPreview);
 userAgeInput.addEventListener("input", updateSettingsPreview);
 userHeightInput.addEventListener("input", updateSettingsPreview);
+if (userWeightSourceSelect) {
+    userWeightSourceSelect.addEventListener("change", updateUserWeightBySource);
+}
+
 userWeightInput.addEventListener("input", updateSettingsPreview);
 userBodyFatInput.addEventListener("input", updateSettingsPreview);
 activityLevelSelect.addEventListener("change", updateSettingsPreview);
@@ -2469,6 +2876,7 @@ updateTargetDisplay();
 updateTrendStartDateDisplay();
 updateWeightDisplay();
 drawWeightChart();
+updateProfileDisplay();
 
 if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {

@@ -366,7 +366,96 @@
         </section>
 
         <!-- ==============================
-             页面 4：设置页
+             页面 4：个人页
+             内容：周总结 / 体重变化速度 / 碳循环统计
+             ============================== -->
+        <section class="page" id="profilePage">
+
+            <!-- v2.0 周总结 -->
+            <section class="card profile-summary-card">
+                <h2>周总结</h2>
+
+                <p class="settings-action-text">
+                    根据当前选择日期所在周的饮食记录，统计本周执行情况。
+                </p>
+
+                <div class="profile-stats-grid">
+                    <div>
+                        <span class="label">记录天数</span>
+                        <strong id="weeklyRecordedDaysText">-</strong>
+                    </div>
+
+                    <div>
+                        <span class="label">平均热量</span>
+                        <strong id="weeklyAverageCaloriesText">-</strong>
+                    </div>
+
+                    <div>
+                        <span class="label">平均蛋白质</span>
+                        <strong id="weeklyAverageProteinText">-</strong>
+                    </div>
+
+                    <div>
+                        <span class="label">蛋白质达标</span>
+                        <strong id="weeklyProteinHitDaysText">-</strong>
+                    </div>
+                </div>
+
+                <div class="result-list profile-result-list">
+                    <p id="weeklyAverageCarbsText">平均碳水：-</p>
+                    <p id="weeklyAverageFatText">平均脂肪：-</p>
+                    <p id="weeklyCaloriesOverDaysText">热量超标天数：-</p>
+                </div>
+            </section>
+
+            <!-- v2.0 体重变化速度判断 -->
+            <section class="card profile-weight-card">
+                <h2>体重变化速度</h2>
+
+                <p class="settings-action-text">
+                    根据本周平均体重和上周平均体重，判断当前体重变化速度是否合适。
+                </p>
+
+                <div class="profile-weight-main">
+                    <p id="profileWeightCompareText">本周与上周对比：-</p>
+                    <strong id="profileWeightChangeText">-</strong>
+                    <span id="profileWeightAdviceText">记录更多体重后，这里会显示判断建议。</span>
+                </div>
+            </section>
+
+            <!-- v2.0 碳循环统计 -->
+            <section class="card profile-carb-cycle-card">
+                <h2>碳循环统计</h2>
+
+                <p class="settings-action-text">
+                    统计当前选择日期所在周的高碳日、中碳日、低碳日分布。
+                </p>
+
+                <div class="carb-cycle-count-grid">
+                    <div class="carb-cycle-count-item high-count-item">
+                        <span class="label">高碳日</span>
+                        <strong id="weeklyHighCarbDaysText">-</strong>
+                    </div>
+
+                    <div class="carb-cycle-count-item medium-count-item">
+                        <span class="label">中碳日</span>
+                        <strong id="weeklyMediumCarbDaysText">-</strong>
+                    </div>
+
+                    <div class="carb-cycle-count-item low-count-item">
+                        <span class="label">低碳日</span>
+                        <strong id="weeklyLowCarbDaysText">-</strong>
+                    </div>
+                </div>
+
+                <p class="help-text" id="weeklyCarbCycleAdviceText">
+                    有记录后，这里会显示本周碳循环执行情况。
+                </p>
+            </section>
+        </section>
+
+        <!-- ==============================
+             页面 5：设置页
              内容：目标计算模式 / App 设置入口
              ============================== -->
         <section class="page" id="settingsPage">
@@ -557,6 +646,11 @@
             <span>日历</span>
         </button>
 
+        <button class="bottom-nav-button" data-page="profilePage" type="button">
+            <span class="nav-icon">👤</span>
+            <span>个人</span>
+        </button>
+
         <button class="bottom-nav-button" data-page="settingsPage" type="button">
             <span class="nav-icon">⚙️</span>
             <span>设置</span>
@@ -675,6 +769,19 @@
                 <input id="userHeight" inputmode="decimal" placeholder="例如 176" type="number" />
             </div>
 
+            <!-- v1.9.2 体重来源设置 -->
+            <div class="form-group">
+                <label for="userWeightSource">体重来源</label>
+                <select id="userWeightSource">
+                    <option value="manual">手动输入体重</option>
+                    <option value="weeklyAverage">使用本周平均体重</option>
+                </select>
+
+                <p class="help-text" id="userWeightSourceHelpText">
+                    手动输入适合临时调整；本周平均体重适合减脂、备赛期间稳定计算 TDEE。
+                </p>
+            </div>
+
             <div class="form-group">
                 <label for="userWeight">体重 kg</label>
                 <input id="userWeight" inputmode="decimal" placeholder="例如 77" type="number" />
@@ -715,7 +822,7 @@
     <!-- ==============================
          JavaScript
          ============================== -->
-    <script src="script.js?v=20"></script>
+    <script src="script.js?v=22"></script>
 </body>
 
 </html>
