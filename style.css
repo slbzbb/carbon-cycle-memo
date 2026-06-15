@@ -635,6 +635,7 @@ body {
 .progress-bar.is-over {
     background: linear-gradient(90deg, var(--color-high), var(--color-danger));
 }
+
 /* ==============================
    v1.4 双目标模式设置
    ============================== */
@@ -1238,5 +1239,255 @@ body {
 
     .carb-cycle-count-item strong {
         font-size: 20px;
+    }
+}
+
+/* ==============================
+   v2.2 本月碳循环计划
+   ============================== */
+
+.monthly-plan-card {
+    margin-bottom: 16px;
+}
+
+.section-subtitle {
+    margin-top: 4px;
+    color: var(--color-muted);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.monthly-plan-control {
+    margin-top: 14px;
+}
+
+.monthly-plan-control label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--color-muted);
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.monthly-plan-control select {
+    width: 100%;
+    min-height: 46px;
+    padding: 10px 12px;
+    color: var(--color-text);
+    background: var(--color-white);
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+    font-size: 15px;
+    font-weight: 700;
+    outline: none;
+}
+
+.monthly-plan-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.monthly-plan-help {
+    margin-top: 12px;
+    padding: 10px 12px;
+    color: var(--color-muted);
+    background: #fffaf3;
+    border: 1px solid rgba(239, 216, 197, 0.75);
+    border-radius: 14px;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.monthly-plan-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 12px;
+    color: var(--color-muted);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.monthly-plan-legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    display: inline-block;
+}
+
+.plan-high-dot {
+    background: var(--color-high);
+}
+
+.plan-medium-dot {
+    background: var(--color-medium);
+}
+
+.plan-low-dot {
+    background: var(--color-low);
+}
+
+/* 只有月计划、还没有实际记录的日历样式 */
+.calendar-day.has-plan {
+    position: relative;
+    border-style: dashed;
+}
+
+.calendar-day.plan-high {
+    background: var(--color-high-bg);
+    color: var(--color-high);
+    border-color: rgba(232, 93, 63, 0.45);
+}
+
+.calendar-day.plan-medium {
+    background: var(--color-medium-bg);
+    color: var(--color-medium);
+    border-color: rgba(230, 162, 60, 0.5);
+}
+
+.calendar-day.plan-low {
+    background: var(--color-low-bg);
+    color: var(--color-low);
+    border-color: rgba(95, 158, 160, 0.5);
+}
+
+/* 有实际记录时，实际记录优先，保持原本实线视觉 */
+.calendar-day.has-record {
+    border-style: solid;
+}
+
+/* 小屏幕按钮上下排列 */
+@media (max-width: 380px) {
+    .monthly-plan-actions {
+        grid-template-columns: 1fr;
+    }
+}
+
+
+/* ==============================
+   v2.3.1 月计划弹窗化与入口卡片
+   ============================== */
+
+/* 日历页：月计划入口卡片 */
+.monthly-plan-entry-card {
+    position: relative;
+    overflow: hidden;
+}
+
+.monthly-plan-entry-card::before {
+    content: "";
+    position: absolute;
+    top: -42px;
+    right: -42px;
+    width: 130px;
+    height: 130px;
+    background:
+        radial-gradient(circle, rgba(194, 106, 46, 0.14) 0%, rgba(194, 106, 46, 0) 68%);
+    pointer-events: none;
+}
+
+.section-title-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.monthly-plan-entry-summary {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin: 14px 0;
+}
+
+.monthly-plan-entry-summary div {
+    padding: 14px;
+    background: rgba(255, 250, 243, 0.86);
+    border: 1px solid rgba(239, 216, 197, 0.7);
+    border-radius: 16px;
+}
+
+.monthly-plan-entry-summary strong {
+    display: block;
+    margin-top: 4px;
+    color: var(--color-primary-dark);
+    font-size: 18px;
+    line-height: 1.3;
+}
+
+.monthly-plan-open-button {
+    width: 100%;
+    min-height: 46px;
+    border-radius: 16px;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+/* 弹窗副标题 */
+.modal-subtitle {
+    margin: 4px 0 0;
+    color: var(--color-muted);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+/* 月计划弹窗内容 */
+.monthly-plan-modal-content {
+    background:
+        linear-gradient(180deg, rgba(255, 252, 247, 0.96), rgba(255, 248, 238, 0.96));
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+}
+
+.monthly-plan-modal-section {
+    margin-top: 14px;
+    padding: 14px;
+    background: rgba(255, 250, 243, 0.78);
+    border: 1px solid rgba(239, 216, 197, 0.72);
+    border-radius: 18px;
+}
+
+/* 弹窗内按钮层级：主按钮 + 次按钮 */
+.monthly-plan-modal-section .monthly-plan-actions {
+    grid-template-columns: 1fr 1fr;
+}
+
+.monthly-plan-modal-section .primary-button,
+.monthly-plan-modal-section .setting-button {
+    min-height: 46px;
+    padding: 12px;
+    border-radius: 16px;
+}
+
+/* 月计划说明在弹窗内更轻一点 */
+.monthly-plan-modal-section .monthly-plan-help {
+    margin-top: 0;
+    background: rgba(255, 245, 223, 0.72);
+}
+
+/* 图例更像状态说明，而不是普通文本 */
+.monthly-plan-modal-section .monthly-plan-legend {
+    padding: 10px 12px;
+    background: rgba(255, 253, 249, 0.78);
+    border: 1px solid rgba(239, 216, 197, 0.6);
+    border-radius: 14px;
+}
+
+/* 小屏幕适配 */
+@media (max-width: 380px) {
+    .monthly-plan-entry-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .monthly-plan-modal-section .monthly-plan-actions {
+        grid-template-columns: 1fr;
     }
 }

@@ -1,6 +1,7 @@
 /* ==============================
-   碳循环小记 - v2.0 功能逻辑
+   碳循环小记 - v2.3.1 功能逻辑
    ============================== */
+
 
 const DEFAULT_SETTINGS = {
     gender: "male",
@@ -30,6 +31,7 @@ const STORAGE_KEYS = {
     records: "carbonCycleRecords",
     settings: "carbonCycleSettings",
     weightRecords: "carbonCycleWeightRecords",
+    monthlyPlans: "carbonCycleMonthlyPlans",
 };
 
 const MODE_LABELS = {
@@ -57,6 +59,27 @@ const MEAL_TYPE_LABELS = {
     postWorkout: "训练后",
     beforeSleep: "睡前餐",
     other: "其他",
+};
+const MONTHLY_PLAN_TEMPLATES = {
+    mediumMediumMediumHigh: {
+        label: "中中中高",
+        pattern: ["medium", "medium", "medium", "high"],
+    },
+    lowLowLowHigh: {
+        label: "低低低高",
+        pattern: ["low", "low", "low", "high"],
+    },
+    mediumHighLowMediumHighLow: {
+        label: "中高低中高低循环",
+        pattern: ["medium", "high", "low", "medium", "high", "low"],
+    },
+};
+
+const MONTHLY_PLAN_NEXT_DAY_TYPE = {
+    none: "low",
+    low: "medium",
+    medium: "high",
+    high: "none",
 };
 
 let selectedDate = getTodayDateText();
@@ -171,6 +194,18 @@ const weeklyHighCarbDaysText = document.getElementById("weeklyHighCarbDaysText")
 const weeklyMediumCarbDaysText = document.getElementById("weeklyMediumCarbDaysText");
 const weeklyLowCarbDaysText = document.getElementById("weeklyLowCarbDaysText");
 const weeklyCarbCycleAdviceText = document.getElementById("weeklyCarbCycleAdviceText");
+
+const monthlyPlanTemplateSelect = document.getElementById("monthlyPlanTemplate");
+const applyMonthlyPlanButton = document.getElementById("applyMonthlyPlanButton");
+const clearMonthlyPlanButton = document.getElementById("clearMonthlyPlanButton");
+const monthlyPlanHelpText = document.getElementById("monthlyPlanHelpText");
+
+const openMonthlyPlanButton = document.getElementById("openMonthlyPlanButton");
+const closeMonthlyPlanButton = document.getElementById("closeMonthlyPlanButton");
+const monthlyPlanModal = document.getElementById("monthlyPlanModal");
+const monthlyPlanStatusText = document.getElementById("monthlyPlanStatusText");
+const monthlyPlanEntryStatusText = document.getElementById("monthlyPlanEntryStatusText");
+const monthlyPlanEntryMonthText = document.getElementById("monthlyPlanEntryMonthText");
 
 const settingsModal = document.getElementById("settingsModal");
 const openSettingsButton = document.getElementById("openSettingsButton");
@@ -935,6 +970,311 @@ function loadRecords() {
  */
 function saveRecords(records) {
     localStorage.setItem(STORAGE_KEYS.records, JSON.stringify(records));
+}
+/**
+ * v2.2 localStorageから月计划を取得する
+ *
+ * @returns {Object}
+ */
+function loadMonthlyPlans() {
+    const savedText = localStorage.getItem(STORAGE_KEYS.monthlyPlans);
+
+    if (!savedText) {
+        return {};
+    }
+
+    try {
+        return JSON.parse(savedText);
+    } catch (error) {
+        console.error("月计划读取失败", error);
+        return {};
+    }
+}
+
+/**
+ * v2.2 localStorageへ月计划を保存する
+ *
+ * @param {Object} monthlyPlans - 月计划数据
+ */
+function saveMonthlyPlans(monthlyPlans) {
+    localStorage.setItem(
+        STORAGE_KEYS.monthlyPlans,
+        JSON.stringify(monthlyPlans)
+    );
+}
+
+/**
+ * v2.2 yyyy-mm を取得する
+ *
+ * @param {Date} date - 日期对象
+ * @returns {string}
+ */
+function getMonthKeyFromDate(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+
+    return `${year}-${month}`;
+}
+
+/**
+ * v2.2 当前日历显示月份のキーを取得する
+ *
+ * @returns {string}
+ */
+function getCurrentCalendarMonthKey() {
+    return getMonthKeyFromDate(calendarViewDate);
+}
+
+/**
+ * v2.2 指定日の月计划を取得する
+ *
+ * @param {string} dateText - yyyy-mm-dd
+ * @returns {string | null}
+ */
+function getMonthlyPlanDayType(dateText) {
+    const monthlyPlans = loadMonthlyPlans();
+    const monthKey = dateText.slice(0, 7);
+
+    if (!monthlyPlans[monthKey]) {
+        return null;
+    }
+
+    return monthlyPlans[monthKey][dateText] || null;
+}
+
+/**
+ * v2.2 月计划の日类型を当前目标表单に反映する
+ *
+ * 经典模式：更新 dayType
+ * 自定义模式：更新 customDayType
+ *
+ * @param {string} dayType - high / medium / low
+ */
+function applyPlannedDayTypeToTargetForm(dayType) {
+    if (!dayType || !DAY_TYPE_LABELS[dayType]) {
+        return;
+    }
+
+    if (targetCalculationModeSelect.value === "custom") {
+        customDayTypeSelect.value = dayType;
+    } else {
+        dayTypeSelect.value = dayType;
+    }
+
+    toggleTargetModePanels();
+}
+
+/**
+ * v2.2 模板から本月计划を作成する
+ *
+ * @param {string} templateKey - 模板 key
+ * @returns {Object | null}
+ */
+function buildMonthlyPlanFromTemplate(templateKey) {
+    const template = MONTHLY_PLAN_TEMPLATES[templateKey];
+
+    if (!template) {
+        return null;
+    }
+
+    const year = calendarViewDate.getFullYear();
+    const month = calendarViewDate.getMonth();
+    const lastDate = new Date(year, month + 1, 0).getDate();
+
+    const monthlyPlan = {};
+
+    for (let day = 1; day <= lastDate; day += 1) {
+        const dateText = formatDate(new Date(year, month, day));
+        const patternIndex = (day - 1) % template.pattern.length;
+
+        monthlyPlan[dateText] = template.pattern[patternIndex];
+    }
+
+    return monthlyPlan;
+}
+
+/**
+ * v2.2 本月计划を保存する
+ *
+ * @param {Object} monthlyPlan - 本月计划
+ */
+function saveCurrentMonthPlan(monthlyPlan) {
+    const monthlyPlans = loadMonthlyPlans();
+    const monthKey = getCurrentCalendarMonthKey();
+
+    monthlyPlans[monthKey] = monthlyPlan;
+
+    saveMonthlyPlans(monthlyPlans);
+}
+
+/**
+ * v2.3.1 更新月计划入口卡片状态
+ */
+function updateMonthlyPlanStatusDisplay() {
+    const monthKey = getCurrentCalendarMonthKey();
+    const monthlyPlans = loadMonthlyPlans();
+    const currentMonthPlan = monthlyPlans[monthKey] || {};
+    const plannedDaysCount = Object.keys(currentMonthPlan).length;
+
+    if (monthlyPlanEntryMonthText) {
+        monthlyPlanEntryMonthText.textContent = monthKey;
+    }
+
+    if (monthlyPlanEntryStatusText) {
+        monthlyPlanEntryStatusText.textContent =
+            plannedDaysCount > 0 ? `已设置 ${plannedDaysCount} 天` : "未设置";
+    }
+
+    if (monthlyPlanStatusText) {
+        monthlyPlanStatusText.textContent =
+            plannedDaysCount > 0
+                ? "本月已有碳循环计划，点击下方按钮可修改。"
+                : "可提前安排整个月的高 / 中 / 低碳日。";
+    }
+}
+
+/**
+ * v2.3.1 打开月计划弹窗
+ */
+function openMonthlyPlanModal() {
+    if (!monthlyPlanModal) {
+        return;
+    }
+
+    updateMonthlyPlanStatusDisplay();
+    monthlyPlanModal.classList.remove("hidden");
+}
+
+/**
+ * v2.3.1 关闭月计划弹窗
+ */
+function closeMonthlyPlanModal() {
+    if (!monthlyPlanModal) {
+        return;
+    }
+
+    monthlyPlanModal.classList.add("hidden");
+}
+
+/**
+ * v2.2 选择したテンプレートを本月に適用する
+ */
+function applyMonthlyPlanTemplate() {
+    if (!monthlyPlanTemplateSelect) {
+        return;
+    }
+
+    const templateKey = monthlyPlanTemplateSelect.value;
+
+    if (templateKey === "manual") {
+        if (monthlyPlanHelpText) {
+            monthlyPlanHelpText.textContent =
+                "手动设置模式：之后可以点击日历日期，在低 / 中 / 高 / 无计划之间切换。";
+        }
+
+        alert("已切换为手动设置模式。");
+        return;
+    }
+
+    const monthlyPlan = buildMonthlyPlanFromTemplate(templateKey);
+
+    if (!monthlyPlan) {
+        alert("请选择有效的月计划模板。");
+        return;
+    }
+
+    saveCurrentMonthPlan(monthlyPlan);
+
+    const record = findRecordByDate(selectedDate);
+    fillInputsFromRecord(record);
+
+    renderCalendar();
+    renderSelectedDateRecord();
+    updateTargetDisplay();
+    updateProfileDisplay();
+    updateMonthlyPlanStatusDisplay();
+
+    if (monthlyPlanHelpText) {
+        const templateLabel = MONTHLY_PLAN_TEMPLATES[templateKey].label;
+
+        monthlyPlanHelpText.textContent =
+            `已将「${templateLabel}」应用到 ${getCurrentCalendarMonthKey()}。已有饮食记录的日期显示时会优先使用实际记录。`;
+    }
+    closeMonthlyPlanModal();
+    alert("本月碳循环计划已应用。");
+}
+
+/**
+ * v2.2 清除当前显示月份の月计划
+ */
+function clearCurrentMonthPlan() {
+    const monthKey = getCurrentCalendarMonthKey();
+    const monthlyPlans = loadMonthlyPlans();
+
+    if (!monthlyPlans[monthKey]) {
+        alert("当前月份还没有月计划。");
+        return;
+    }
+
+    const confirmed = confirm(`确定要清除 ${monthKey} 的碳循环计划吗？`);
+
+    if (!confirmed) {
+        return;
+    }
+
+    delete monthlyPlans[monthKey];
+    saveMonthlyPlans(monthlyPlans);
+    renderCalendar();
+    updateMonthlyPlanStatusDisplay();
+
+    if (monthlyPlanHelpText) {
+        monthlyPlanHelpText.textContent =
+            `已清除 ${monthKey} 的碳循环计划。`;
+    }
+    closeMonthlyPlanModal();
+    alert("本月计划已清除。");
+}
+
+/**
+ * v2.2 手动切换指定日期の月计划
+ *
+ * 切换顺序：
+ * 无计划 → 低碳 → 中碳 → 高碳 → 无计划
+ *
+ * @param {string} dateText - yyyy-mm-dd
+ */
+function toggleMonthlyPlanDayType(dateText) {
+    if (!monthlyPlanTemplateSelect || monthlyPlanTemplateSelect.value !== "manual") {
+        return false;
+    }
+
+    const monthKey = dateText.slice(0, 7);
+    const monthlyPlans = loadMonthlyPlans();
+    const currentMonthPlan = monthlyPlans[monthKey] || {};
+    const currentDayType = currentMonthPlan[dateText] || "none";
+    const nextDayType = MONTHLY_PLAN_NEXT_DAY_TYPE[currentDayType];
+
+    if (nextDayType === "none") {
+        delete currentMonthPlan[dateText];
+    } else {
+        currentMonthPlan[dateText] = nextDayType;
+    }
+
+    monthlyPlans[monthKey] = currentMonthPlan;
+    saveMonthlyPlans(monthlyPlans);
+    renderCalendar();
+    updateMonthlyPlanStatusDisplay();
+
+    if (monthlyPlanHelpText) {
+        const label = nextDayType === "none"
+            ? "无计划"
+            : DAY_TYPE_LABELS[nextDayType];
+
+        monthlyPlanHelpText.textContent =
+            `${formatDisplayDate(dateText)} 已设置为：${label}。`;
+    }
+
+    return true;
 }
 
 /**
@@ -1886,12 +2226,13 @@ function bindWeightChartEvents() {
 function exportBackupData() {
     const backupData = {
         appName: "碳循环小记",
-        version: "2.0",
+        version: "2.2",
         exportedAt: new Date().toISOString(),
         data: {
             records: loadRecords(),
             settings: loadSettings(),
             weightRecords: loadWeightRecords(),
+            monthlyPlans: loadMonthlyPlans(),
         },
     };
 
@@ -1954,7 +2295,7 @@ function importBackupData() {
     }
 
     const confirmed = confirm(
-        "导入后会覆盖当前浏览器中的饮食记录、设置和体重记录。确定要导入吗？"
+        "导入后会覆盖当前浏览器中的饮食记录、设置、体重记录和月计划。确定要导入吗？"
     );
 
     if (!confirmed) {
@@ -1979,6 +2320,11 @@ function importBackupData() {
         JSON.stringify(parsedData.data.weightRecords || [])
     );
 
+    localStorage.setItem(
+        STORAGE_KEYS.monthlyPlans,
+        JSON.stringify(parsedData.data.monthlyPlans || {})
+    );
+
     fillTargetSettingsForm();
     renderCalendar();
     renderSelectedDateRecord();
@@ -1987,6 +2333,7 @@ function importBackupData() {
     updateWeightDisplay();
     drawWeightChart();
     updateProfileDisplay();
+    updateMonthlyPlanStatusDisplay();
 
     alert("数据导入完成。");
 }
@@ -2009,6 +2356,7 @@ function validateBackupData(backupData) {
     const records = backupData.data.records;
     const settings = backupData.data.settings;
     const weightRecords = backupData.data.weightRecords;
+    const monthlyPlans = backupData.data.monthlyPlans;
 
     if (!Array.isArray(records)) {
         return false;
@@ -2019,6 +2367,9 @@ function validateBackupData(backupData) {
     }
 
     if (!Array.isArray(weightRecords)) {
+        return false;
+    }
+    if (monthlyPlans !== undefined && typeof monthlyPlans !== "object") {
         return false;
     }
 
@@ -2360,20 +2711,32 @@ function deleteRecordByDate(dateText) {
 /**
  * 选择日期后，清空当前输入框，并读取当天模式
  *
+ * 优先级：
+ * 1. 已有饮食记录：读取实际记录
+ * 2. 没有饮食记录：读取月计划
+ * 3. 没有月计划：保持当前选择
+ *
  * @param {Object | null} record - 当前日期记录
  */
 function fillInputsFromRecord(record) {
     clearCurrentMealInput();
 
-    if (!record) {
-        updateDiffDisplay();
-        updateOverviewDisplay();
+    if (record) {
+        restoreTargetSettingsFromRecord(record);
+        updateTargetDisplay();
         return;
     }
 
-    restoreTargetSettingsFromRecord(record);
+    const plannedDayType = getMonthlyPlanDayType(selectedDate);
 
-    updateTargetDisplay();
+    if (plannedDayType) {
+        applyPlannedDayTypeToTargetForm(plannedDayType);
+        updateTargetDisplay();
+        return;
+    }
+
+    updateDiffDisplay();
+    updateOverviewDisplay();
 }
 
 /**
@@ -2449,6 +2812,7 @@ function renderCalendar() {
     for (let day = 1; day <= lastDate; day += 1) {
         const dateText = formatDate(new Date(year, month, day));
         const record = recordMap[dateText];
+        const monthlyPlanDayType = getMonthlyPlanDayType(dateText);
 
         const classes = ["calendar-day"];
 
@@ -2463,13 +2827,16 @@ function renderCalendar() {
         if (record) {
             classes.push("has-record");
             classes.push(`record-${record.dayType}`);
+        } else if (monthlyPlanDayType) {
+            classes.push("has-plan");
+            classes.push(`plan-${monthlyPlanDayType}`);
         }
 
         dayCells.push(`
-            <button class="${classes.join(" ")}" type="button" data-date="${dateText}">
-                ${day}
-            </button>
-        `);
+        <button class="${classes.join(" ")}" type="button" data-date="${dateText}">
+            ${day}
+        </button>
+    `);
     }
 
     calendarGrid.innerHTML = dayCells.join("");
@@ -2493,17 +2860,45 @@ function buildRecordMap(records) {
 
 /**
  * 日历日期按钮にイベントを設定する
+ *
+ * 普通模式：点击日期 = 选择日期
+ * 手动月计划模式：点击日期 = 切换当天计划
  */
 function bindCalendarDayButtons() {
     const dayButtons = document.querySelectorAll(".calendar-day[data-date]");
 
     dayButtons.forEach((button) => {
         button.addEventListener("click", () => {
-            selectDate(button.dataset.date);
+            const dateText = button.dataset.date;
+
+            if (
+                monthlyPlanTemplateSelect &&
+                monthlyPlanTemplateSelect.value === "manual"
+            ) {
+                selectedDate = dateText;
+
+                const [year, month] = dateText.split("-").map(Number);
+                calendarViewDate = new Date(year, month - 1, 1);
+
+                toggleMonthlyPlanDayType(dateText);
+
+                const record = findRecordByDate(selectedDate);
+
+                fillInputsFromRecord(record);
+                renderSelectedDateRecord();
+                updateTargetDisplay();
+                updateTrendStartDateDisplay();
+                updateWeightDisplay();
+                drawWeightChart();
+                updateProfileDisplay();
+
+                return;
+            }
+
+            selectDate(dateText);
         });
     });
 }
-
 /**
  * 日期を選択する
  *
@@ -2538,6 +2933,7 @@ function moveToPrevMonth() {
     );
 
     renderCalendar();
+    updateMonthlyPlanStatusDisplay();
 }
 
 /**
@@ -2551,6 +2947,7 @@ function moveToNextMonth() {
     );
 
     renderCalendar();
+    updateMonthlyPlanStatusDisplay();
 }
 
 /**
@@ -2711,6 +3108,7 @@ function saveUserSettings() {
 
     saveSettings(settings);
     updateTargetDisplay();
+    updateProfileDisplay();
     closeSettingsModal();
 
     alert("个人数据已保存");
@@ -2897,6 +3295,29 @@ if (saveTrendStartDateButton) {
 if (clearTrendStartDateButton) {
     clearTrendStartDateButton.addEventListener("click", clearTrendStartDate);
 }
+if (applyMonthlyPlanButton) {
+    applyMonthlyPlanButton.addEventListener("click", applyMonthlyPlanTemplate);
+}
+
+if (clearMonthlyPlanButton) {
+    clearMonthlyPlanButton.addEventListener("click", clearCurrentMonthPlan);
+}
+
+if (openMonthlyPlanButton) {
+    openMonthlyPlanButton.addEventListener("click", openMonthlyPlanModal);
+}
+
+if (closeMonthlyPlanButton) {
+    closeMonthlyPlanButton.addEventListener("click", closeMonthlyPlanModal);
+}
+
+if (monthlyPlanModal) {
+    monthlyPlanModal.addEventListener("click", (event) => {
+        if (event.target === monthlyPlanModal) {
+            closeMonthlyPlanModal();
+        }
+    });
+}
 
 prevMonthButton.addEventListener("click", moveToPrevMonth);
 nextMonthButton.addEventListener("click", moveToNextMonth);
@@ -2941,6 +3362,7 @@ updateTrendStartDateDisplay();
 updateWeightDisplay();
 drawWeightChart();
 updateProfileDisplay();
+updateMonthlyPlanStatusDisplay();
 
 if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
