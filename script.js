@@ -1080,13 +1080,62 @@ function getFirstRecordedWeekStartDateText() {
 }
 
 /**
+ * v2.1 验证日期格式和有效性
+ *
+ * 检查：
+ * 1. 格式是否为 yyyy-mm-dd
+ * 2. 日期是否真实存在，例如不允许 2月30日
+ * 3. 是否为未来日期
+ *
+ * @param {string} dateText - 日期文本 yyyy-mm-dd
+ * @returns {boolean}
+ */
+function isValidDate(dateText) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateText)) {
+        return false;
+    }
+
+    const [year, month, day] = dateText.split("-").map(Number);
+
+    if (month < 1 || month > 12 || day < 1 || day > 31) {
+        return false;
+    }
+
+    const date = new Date(year, month - 1, day);
+
+    if (
+        date.getFullYear() !== year ||
+        date.getMonth() !== month - 1 ||
+        date.getDate() !== day
+    ) {
+        return false;
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (date > today) {
+        return false;
+    }
+
+    return true;
+}
+
+
+/**
  * v1.8 自定义起始日を保存する
+ * v2.1 改进：保存前验证日期有效性
  */
 function saveTrendStartDate() {
     const trendStartDate = trendStartDateInput ? trendStartDateInput.value : "";
 
     if (!trendStartDate) {
         alert("请选择趋势起始日。");
+        return;
+    }
+
+    if (!isValidDate(trendStartDate)) {
+        alert("请选择一个有效的日期（不能是未来日期或不存在的日期）。");
         return;
     }
 
@@ -1142,6 +1191,7 @@ function getEffectiveTrendStartWeekDateText() {
 
 /**
  * v1.8 起始日显示を更新する
+ * v2.1 改进：没有体重记录时显示更清晰的提示
  */
 function updateTrendStartDateDisplay() {
     if (!trendStartDateInput || !trendStartDateHelpText) {
@@ -1152,6 +1202,9 @@ function updateTrendStartDateDisplay() {
     const trendStartDate = settings.trendStartDate || "";
     const effectiveWeekStart = getEffectiveTrendStartWeekDateText();
 
+    const weightRecords = loadWeightRecords();
+    const hasWeightRecords = weightRecords.length > 0;
+
     trendStartDateInput.value = trendStartDate;
 
     if (trendStartDate) {
@@ -1161,6 +1214,11 @@ function updateTrendStartDateDisplay() {
 
     if (effectiveWeekStart) {
         trendStartDateHelpText.textContent = `未手动设置，当前使用第一条体重记录所在周：${formatDisplayDate(effectiveWeekStart)} 开始。`;
+        return;
+    }
+
+    if (!hasWeightRecords) {
+        trendStartDateHelpText.textContent = "💡 请先在下方添加至少一条体重记录。";
         return;
     }
 
@@ -1258,10 +1316,16 @@ function updateWeightDisplay() {
     );
 
     weekDifferenceText.textContent = weekDifference;
-    firstWeekDifferenceText.textContent = firstWeekDifference;
+
+    if (firstWeekStart && currentWeekStart === firstWeekStart) {
+        firstWeekDifferenceText.textContent = "当前为起始周";
+        updateWeightDifferenceClass(firstWeekDifferenceText, "当前为起始周");
+    } else {
+        firstWeekDifferenceText.textContent = firstWeekDifference;
+        updateWeightDifferenceClass(firstWeekDifferenceText, firstWeekDifference);
+    }
 
     updateWeightDifferenceClass(weekDifferenceText, weekDifference);
-    updateWeightDifferenceClass(firstWeekDifferenceText, firstWeekDifference);
 }
 /**
  * v2.0 当前选择日期所在周の饮食记录を取得する

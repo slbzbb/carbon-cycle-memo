@@ -2,6 +2,7 @@
     "name": "碳循环小记",
     "short_name": "碳循环",
     "description": "记录碳循环饮食、每日目标和实际摄入的小工具。",
+    "version": "2.1",
     "start_url": "./",
     "scope": "./",
     "display": "standalone",
